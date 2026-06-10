@@ -10,7 +10,10 @@ onlyvulns_v1 = Blueprint('onlyvulns', __name__, url_prefix='/api/v1')
 
 
 def limit_requests():
-    data = request.get_json(force=True)
+    if request.is_json:
+        data = request.get_json(force=True)
+    else:
+        data = request.args
     token = data.get("token", None)
     use_ip = False
     if token is None:
@@ -39,7 +42,7 @@ def handler_429():
 @app.route("/")
 def public_home():
     return settings.build_json_report({
-        "version": "1.0",
+        "version": "0.1",
         "title": "OnlyVulns API"
     })
 
@@ -66,6 +69,20 @@ def logout_researcher():
 @onlyvulns_v1.route("/researcher/whoami", methods=["POST"])
 def whoami_researcher():
     pass
+
+
+@onlyvulns_v1.route("/researcher/magiclink", methods=["GET"])
+def magiclink_researcher():
+    token = request.args.get("token", None)
+    email_address = request.args.get("rid", None)
+    if token is None:
+        return settings.build_json_report(None, is_error=True, error_string="No auth token provided")
+    if email_address is None:
+        return settings.build_json_report(None, is_error=True, error_string="No email address provided")
+    # TODO:/ enable lookup of registered user and auth token from mongodb
+    return settings.build_json_report({
+        "token": settings.create_user_token(email_address)
+    })
 
 
 #

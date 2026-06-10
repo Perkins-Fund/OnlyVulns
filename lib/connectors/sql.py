@@ -22,3 +22,10 @@ def get_client():
     except Exception as e:
         raise ClientError(f"unable to create client connection: {str(e)}")
 
+
+def register_user(user_email):
+    pass
+
+
+def insert_sign_in_link(link, associated_user, expires_at):
+    pass

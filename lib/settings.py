@@ -2,7 +2,7 @@ import uuid
 import json
 import time
 
-from flask import jsonify
+from itsdangerous import URLSafeTimedSerializer
 
 
 def load_env():
@@ -42,6 +42,40 @@ def build_json_report(output, **kwargs):
         "request_id": build_id(),
         "request_timestamp": int(time.time())
     }
-    return jsonify(retval)
+    return retval
 
 
+
+def make_admin_serial():
+    secret = load_env()['user_config']['user_secret']
+    return URLSafeTimedSerializer(secret)
+
+
+def make_serial():
+    secret = load_env()['user_config']['admin_secret']
+    return URLSafeTimedSerializer(secret)
+
+
+def create_user_token(username, is_admin=False):
+    if not is_admin:
+        serializer = make_serial()
+        return serializer.dumps({"token": username})
+    else:
+        serializer = make_admin_serial()
+        return serializer.dumps({"token": username})
+
+
+def verify_token(token, is_admin=False):
+    try:
+        if not is_admin:
+            serial = make_serial()
+            max_age = load_env()['user_config']['session_secrets']['user_max_age']
+            data = serial.loads(token, max_age=max_age)
+            return data['token']
+        else:
+            serial = make_admin_serial()
+            max_age = load_env()['user_config']['session_secrets']['admin_max_age']
+            data = serial.loads(token, max_age=max_age)
+            return data['token']
+    except:
+        return None
