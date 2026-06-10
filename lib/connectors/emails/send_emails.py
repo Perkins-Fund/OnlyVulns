@@ -30,6 +30,87 @@ def build_sign_in_link(researcher_id, expires_in=120):
     }
 
 
+def send_new_magic_link_email(email_address, sign_in_link):
+    params: resend.Emails.SendParams = {
+        "from": "Onboarding <onboard@onlyvulns.org>",
+        "to": [email_address],
+        "subject": "Magiclink refreshed!",
+        "html": f"""<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#050505; margin:0; padding:0;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px; background:#0b0b0b; border:1px solid #222; border-radius:14px; overflow:hidden;">
+        
+        <tr>
+          <td style="padding:28px 32px 18px 32px; border-bottom:1px solid #222;">
+            <div style="font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:#9ca3af;">
+              OnlyVulns
+            </div>
+            <h1 style="margin:12px 0 0 0; font-size:28px; line-height:1.2; color:#ffffff; font-weight:700;">
+              Magiclink refresh requested
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 18px 0; font-size:16px; line-height:1.6; color:#e5e7eb;">
+              Hi!
+            </p>
+
+            <p style="margin:0 0 18px 0; font-size:16px; line-height:1.6; color:#e5e7eb;">
+              A refreshed OnlyVulns magic link was requested for your researcher account.
+            </p>
+
+            <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6; color:#d1d5db;">
+              Use the secure link below to sign in. This refreshed magic link replaces your previous magic link.
+            </p>
+
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+              <tr>
+                <td align="center" style="border-radius:8px; background:#ffffff;">
+                  <a href="{sign_in_link}" target="_blank" style="display:inline-block; padding:14px 22px; font-size:15px; line-height:1; color:#050505; text-decoration:none; font-weight:700; border-radius:8px;">
+                    Sign in with refreshed magic link
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 18px 0; font-size:14px; line-height:1.6; color:#9ca3af;">
+              This magic link expires in 120 days. If it expires, you can request another magic link from the sign-in page.
+            </p>
+
+            <p style="margin:0; font-size:14px; line-height:1.6; color:#9ca3af;">
+              If you did not request this magic link refresh, contact support immediately at contact@perkinsfund.org.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 32px; border-top:1px solid #222; background:#080808;">
+            <p style="margin:0 0 6px 0; font-size:14px; color:#ffffff; font-weight:700;">
+              OnlyVulns
+            </p>
+            <p style="margin:0 0 10px 0; font-size:13px; line-height:1.5; color:#9ca3af;">
+              Researcher-controlled vulnerability disclosure
+            </p>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:#6b7280;">
+              contact@perkinsfund.org
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>"""
+    }
+    try:
+        resend.Emails.send(params)
+        return True
+    except:
+        return False
+
+
 def send_email(email_address, sign_in_link):
     params: resend.Emails.SendParams = {
         "from": "Onboarding <onboard@onlyvulns.org>",
@@ -88,7 +169,7 @@ def send_email(email_address, sign_in_link):
             </ul>
 
             <p style="margin:0 0 18px 0; font-size:14px; line-height:1.6; color:#9ca3af;">
-              This sign-in link expires in 30 days. If it expires or you need a different link, you can request a new one from the sign-in page.
+              This sign-in link expires in 120 days. If it expires or you need a different link, you can request a new one from the sign-in page.
             </p>
 
             <p style="margin:0; font-size:14px; line-height:1.6; color:#9ca3af;">

@@ -11,9 +11,12 @@ def load_env():
 
 def build_id(**kwargs):
     is_error = kwargs.get('is_error', False)
+    is_user_id = kwargs.get('is_user_id', False)
 
     if is_error:
         template = "err_"
+    elif is_user_id:
+        template = ""
     else:
         template = "req_"
     return f"{template}{uuid.uuid4().hex}"
