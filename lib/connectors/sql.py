@@ -97,11 +97,13 @@ def register_user(user_email, magic_link):
                 "token_hash": magic_link['token_hash'],
                 "expires_at": magic_link['expires_at']
             },
-            "researcher_tips_metadata": {
+            "researcher_tips": {
                 "accepted_by_researcher": False,
                 "is_researcher_eligible": False,
                 "started_accepting_on": None,
-                "last_payout_on": None
+                "last_payout_on": None,
+                "stripe_onboarding_complete": False,
+                "stripe_account_id": None
             }
         })
         return True
