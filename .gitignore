@@ -1,3 +1,5 @@
 .idea/*
 env.json
 .venv/*
+test.*
+*pycache*

@@ -45,7 +45,30 @@ def public_home():
 
 
 #
-# CREATE USER LOGIN
+# CREATE RESEARCHER LOGIN
 #
 
+@onlyvulns_v1.route("/researcher/register", methods=["POST"])
+def register_researcher():
+    pass
+
+
+@onlyvulns_v1.route("/researcher/login", methods=["POST"])
+def login_researcher():
+    pass
+
+
+@onlyvulns_v1.route("/researcher/logout", methods=["GET"])
+def logout_researcher():
+    pass
+
+
+@onlyvulns_v1.route("/researcher/whoami", methods=["POST"])
+def whoami_researcher():
+    pass
+
+
+#
+# END RESEARCHER LOGIN
+#
 
