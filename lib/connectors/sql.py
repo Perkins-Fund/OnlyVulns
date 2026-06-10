@@ -27,6 +27,7 @@ def get_client():
         raise ClientError(f"unable to create client connection: {str(e)}")
 
 
+@security.sanitize_mongo_args("email_address", "magic_link_data")
 def update_magic_link(email_address, magic_link_data):
     client = get_client()
     conf = settings.load_env()
@@ -41,6 +42,7 @@ def update_magic_link(email_address, magic_link_data):
         return False
 
 
+@security.sanitize_mongo_args("email_address")
 def verify_user(email_address):
     client = get_client()
     conf = settings.load_env()
@@ -63,6 +65,7 @@ def verify_user(email_address):
         return False
 
 
+@security.sanitize_mongo_args("email_address")
 def find_user_by_email(email_address):
     client = get_client()
     conf = settings.load_env()
