@@ -38,17 +38,14 @@ limiter = Limiter(
 
 
 @app.errorhandler(429)
-def handler_429():
-    return settings.build_json_report(None, is_error=True, error_string="You have hit the request rate limit")
+def handler_429(_):
+    app.logger.warning("Hit request rate limit")
+    return settings.build_json_report(None, is_error=True, error_string=str(_))
 
 
 @app.errorhandler(Exception)
 def handler_exception(error):
-    if isinstance(error, HTTPException):
-        return settings.build_json_report(
-            None, is_error=True,
-            error_string="Unhandled HTTP exception occurred"
-        ), 400
+    app.logger.error(error)
     return settings.build_json_report(None, is_error=True, error_string="Internal server error"), 500
 
 
