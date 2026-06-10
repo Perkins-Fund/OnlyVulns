@@ -40,7 +40,7 @@ limiter = Limiter(
 @app.errorhandler(429)
 def handler_429(_):
     app.logger.warning("Hit request rate limit")
-    return settings.build_json_report(None, is_error=True, error_string=str(_))
+    return settings.build_json_report(None, is_error=True, error_string="You have been rate limited, 50 requests per 1 second.")
 
 
 @app.errorhandler(Exception)
