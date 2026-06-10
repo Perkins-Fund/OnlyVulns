@@ -96,6 +96,12 @@ def register_user(user_email, magic_link):
             "magic_link_info": {
                 "token_hash": magic_link['token_hash'],
                 "expires_at": magic_link['expires_at']
+            },
+            "researcher_tips_metadata": {
+                "accepted_by_researcher": False,
+                "is_researcher_eligible": False,
+                "started_accepting_on": None,
+                "last_payout_on": None
             }
         })
         return True
