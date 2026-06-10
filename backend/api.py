@@ -1,5 +1,6 @@
 import hashlib
 import datetime
+from http.client import HTTPException
 
 from flask import Flask, request, Blueprint
 from flask_limiter.util import get_remote_address
@@ -15,18 +16,15 @@ onlyvulns_v1 = Blueprint('onlyvulns', __name__, url_prefix='/api/v1')
 
 
 def limit_requests():
+    token = None
     if request.is_json:
-        data = request.get_json(force=True)
-    else:
-        data = request.args
-    token = data.get("token", None)
-    use_ip = False
-    if token is None:
-        use_ip = True
-    if not use_ip:
+        data = request.get_json(force=True) or {}
+        token = data.get("token", None)
+    if not token:
+        token = request.args.get("token")
+    if token:
         return f"tok:{token}"
-    else:
-        return f"ip:{get_remote_address()}"
+    return f"ip:{get_remote_address()}"
 
 
 conf = settings.load_env()
@@ -42,6 +40,16 @@ limiter = Limiter(
 @app.errorhandler(429)
 def handler_429():
     return settings.build_json_report(None, is_error=True, error_string="You have hit the request rate limit")
+
+
+@app.errorhandler(Exception)
+def handler_exception(error):
+    if isinstance(error, HTTPException):
+        return settings.build_json_report(
+            None, is_error=True,
+            error_string="Unhandled HTTP exception occurred"
+        ), 400
+    return settings.build_json_report(None, is_error=True, error_string="Internal server error"), 500
 
 
 @app.route("/")
