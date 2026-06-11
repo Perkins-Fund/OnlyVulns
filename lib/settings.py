@@ -1,9 +1,16 @@
+import os
 import uuid
 import json
 import time
+import hashlib
 import ipaddress
 
 from itsdangerous import URLSafeTimedSerializer
+
+
+MAX_FILES_PER_REPORT = 5
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB total size
 
 
 def load_env():
@@ -13,9 +20,15 @@ def load_env():
 def build_id(**kwargs):
     is_error = kwargs.get('is_error', False)
     is_user_id = kwargs.get('is_user_id', False)
+    is_report_id = kwargs.get('is_report_id', False)
+    is_file_id = kwargs.get('is_file_id', False)
 
     if is_error:
         template = "err_"
+    elif is_file_id:
+        template = "fle_"
+    elif is_report_id:
+        template = "rep_"
     elif is_user_id:
         template = ""
     else:
@@ -161,3 +174,41 @@ def get_client_ip(req, fallback_func):
         return ip
     return None
 
+
+def get_uploaded_file_size(fh):
+    pos = fh.stream.tell()
+    fh.stream.seek(0, os.SEEK_END)
+    size = fh.stream.tell()
+    fh.stream.seek(pos)
+    return size
+
+
+def get_file_hash_from_stream(storage, alg="sha256", chunk_size=1024*1024):
+    stream = storage.stream
+    pos = stream.tell()
+    stream.seek(0)
+    h = hashlib.new(alg)
+    while True:
+        chunk = stream.read(chunk_size)
+        if not chunk:
+            break
+        h.update(chunk)
+    stream.seek(pos)
+    return h.hexdigest()
+
+
+def validate_file_upload(files):
+    files = [fh for fh in files if fh and fh.filename]
+    if len(files) > MAX_FILES_PER_REPORT:
+        return False, "Max files per report exceeded"
+    total_size = 0
+    for fh in files:
+        size = get_uploaded_file_size(fh)
+        if size <= 0:
+            return False, "Empty files are not allowed"
+        if size > MAX_FILE_SIZE:
+            return False, "Max file size exceeded"
+        total_size += size
+        if total_size > MAX_TOTAL_FILE_SIZE:
+            return False, "Max file size per report exceeded"
+    return True, None

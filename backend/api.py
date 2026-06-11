@@ -4,6 +4,7 @@ import datetime
 from flask import Flask, request, Blueprint
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
+from werkzeug.utils import secure_filename
 
 import lib.settings as settings
 import lib.connectors.sql as sql
@@ -189,8 +190,20 @@ def create_report():
     report_title = data.get("report_title", None)
     report_cvss = data.get("report_cvss", None)
     report_vendor = data.get("report_vendor", None)
+    report_write_up = data.get("report_write_up", None)
+    report_id = settings.build_id(is_report_id=True)
+    if report_write_up is None:
+        return settings.build_json_report(None, is_error=True, error_string="Report write up is required")
+    if len(report_write_up) < 250:
+        return settings.build_json_report(None, is_error=True, error_string=f"Report write up needs to be at least 250 characters long, you are at {len(report_write_up)}")
+    if len(report_write_up) > 20000:
+        return settings.build_json_report(None, is_error=True, error_string="Report write up needs to be at less than 20,000 characters long")
     if report_title is None:
         return settings.build_json_report(None, is_error=True, error_string="Invalid title provided")
+    if len(report_title) < 5:
+        return settings.build_json_report(None, is_error=True, error_string="Report title needs to be at least 5 characters long")
+    if len(report_title) > 45:
+        return settings.build_json_report(None, is_error=True, error_string="Report title needs to be at less than 45 characters long")
     if report_cvss is None:
         report_cvss = "N/A"
     if report_vendor is None:
@@ -205,7 +218,67 @@ def create_report():
             release_days = int(release_days)
         except:
             return settings.build_json_report(None, is_error=True, error_string="Invalid release_days provided")
-
+    uploaded_files = request.files.getlist("files")
+    ok, err_msg = settings.validate_file_upload(uploaded_files)
+    if not ok:
+        return settings.build_json_report(None, is_error=True, error_string=err_msg)
+    file_reports = []
+    for fh in uploaded_files:
+        file_hash = settings.get_file_hash_from_stream(fh)
+        fh.stream.seek(0)
+        file_size = settings.get_uploaded_file_size(fh)
+        fh.stream.seek(0)
+        file_upload_name = secure_filename(fh.filename)
+        file_content_type = fh.content_type or "application/octet-stream"
+        file_id = settings.build_id(is_file_id=True)
+        try:
+            uploaded_file = sql.store_report_files(
+                report_id, user_exists['user_id'], fh, file_upload_name, file_content_type,
+                original_filename=fh.filename,
+                file_size=file_size,
+                file_integrity_hash=file_hash,
+                file_id=file_id,
+            )
+            file_reports.append({
+                "file_hash": file_hash,
+                "uploaded": True,
+                "upload_error": None,
+                "content_type": file_content_type,
+                "file_id": file_id,
+                "sha256": file_hash,
+                "file_upload_id": str(uploaded_file)
+            })
+        except Exception as e:
+            file_reports.append({
+                "file_hash": file_hash,
+                "uploaded": False,
+                "upload_error": str(e),
+                "content_type": file_content_type,
+                "file_id": file_id,
+                "sha256": file_hash,
+                "file_upload_id": None
+            })
+    is_report_created = sql.add_report(
+        user_exists['user_id'],
+        wait_time,
+        release_days,
+        report_title,
+        report_cvss,
+        report_vendor,
+        file_reports,
+        report_id,
+        report_write_up
+    )
+    for report in file_reports:
+        del report['file_upload_id']
+        del report['upload_error']
+    if is_report_created:
+        return settings.build_json_report({
+            "report_id": report_id,
+            "files": file_reports
+        })
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Unable to create report")
 
 
 @onlyvulns_v1.route("/reports/search", methods=["POST"])

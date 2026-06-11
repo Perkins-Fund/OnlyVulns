@@ -1,5 +1,6 @@
 import datetime
 
+import gridfs
 import pymongo
 
 from pymongo import UpdateOne
@@ -27,12 +28,90 @@ def get_client():
         raise ClientError(f"unable to create client connection: {str(e)}")
 
 
+def gridfs_client():
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    return gridfs.GridFS(db, collection=conf['database']['collections']['users']['files'])
+
+
+def get_report_files(report_id):
+    client = gridfs_client()
+    try:
+        file_data = client.get(report_id)
+        bytes_ = file_data.read()
+        filename = file_data.filename
+        metadata = file_data.metadata
+    except:
+        return None, None, None
+
+
+def store_report_files(report_id, researcher_id, fh, filename, content_type, **kwargs):
+    original_filename = kwargs.get("original_filename", None)
+    file_size = kwargs.get("file_size", None)
+    file_integrity_hash = kwargs.get("file_integrity_hash", None)
+    file_id = kwargs.get("file_id", None)
+
+    client = gridfs_client()
+    try:
+        file_id = client.put(
+            fh.stream,
+            filename=filename,
+            content_type=content_type,
+            metadata={
+                "associated_researcher": researcher_id,
+                "associated_report": report_id,
+                "file_id": file_id,
+                "file_uploaded_on": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+                "original_filename": original_filename,
+                "file_upload_size": file_size,
+                "integrity_hash": file_integrity_hash,
+                "quarantined": True
+            },
+        )
+        return file_id
+    except:
+        return None
+
+
 def get_last_report():
     pass
 
 
-def add_report(email_address, *args):
-    pass
+def add_report(researcher_id, wait_time, release_days, report_title, report_cvss, report_vendor, report_files, report_id, report_write_up):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['reports']]
+
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    embargo_ends = now + datetime.timedelta(days=release_days)
+    wait_ends = embargo_ends + datetime.timedelta(days=wait_time)
+
+    try:
+        collection.insert_one({
+            "report_id": report_id,
+            "associated_researcher": researcher_id,
+            "release_wait_time": wait_time,
+            "total_release_days": release_days,
+            "report_title": report_title,
+            "cvss_score": report_cvss,
+            "associated_vendor": report_vendor,
+            "report_write_up": report_write_up,
+            "report_files": {
+                "total_files": len(report_files),
+                "attached_files": report_files
+            },
+            "metadata": {
+                "date_reported_on": now.isoformat(),
+                "embargo_end_date": embargo_ends.isoformat(),
+                "wait_end_date": wait_ends.isoformat()
+            }
+        })
+        return True
+    except:
+        return False
+
 
 
 @security.sanitize_mongo_args("email_address")
