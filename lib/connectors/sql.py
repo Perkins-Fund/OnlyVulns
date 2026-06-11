@@ -27,6 +27,30 @@ def get_client():
         raise ClientError(f"unable to create client connection: {str(e)}")
 
 
+def get_last_report():
+    pass
+
+
+def add_report(email_address, *args):
+    pass
+
+
+@security.sanitize_mongo_args("email_address")
+def change_researcher_reputation(email_address, amount=1, downvote=False):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        results = collection.update_one(
+            {"email_address": email_address},
+            {"$inc": {"reputation": +amount if not downvote else -amount}},
+        )
+        return results.modified_count == 1
+    except:
+        return False
+
+
 @security.sanitize_mongo_args("researcher_id")
 def find_researcher_by_id(researcher_id):
     client = get_client()

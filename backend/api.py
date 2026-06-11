@@ -172,10 +172,40 @@ def refresh_magic_link():
 # START REPORTS ENDPOINTS
 #
 
-
 @onlyvulns_v1.route("/reports/create", methods=["POST"])
 def create_report():
-    pass
+    data = request.form
+    token = data.get("token", None)
+    if token is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+    good_token = settings.verify_token(token)
+    if good_token is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+    user_exists = sql.find_user_by_email(good_token)
+    if user_exists is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+    wait_time = data.get("wait_time", 7)
+    release_days = data.get("release_days", 30)
+    report_title = data.get("report_title", None)
+    report_cvss = data.get("report_cvss", None)
+    report_vendor = data.get("report_vendor", None)
+    if report_title is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid title provided")
+    if report_cvss is None:
+        report_cvss = "N/A"
+    if report_vendor is None:
+        report_vendor = "N/A"
+    if not isinstance(wait_time, int):
+        try:
+            wait_time = int(wait_time)
+        except:
+            return settings.build_json_report(None, is_error=True, error_string="Invalid wait_time provided")
+    if not isinstance(release_days, int):
+        try:
+            release_days = int(release_days)
+        except:
+            return settings.build_json_report(None, is_error=True, error_string="Invalid release_days provided")
+
 
 
 @onlyvulns_v1.route("/reports/search", methods=["POST"])
@@ -187,6 +217,11 @@ def search_report():
 def delete_report():
     pass
 
+
+@onlyvulns_v1.route("/reports/edit", methods=["POST"])
+def edit_report():
+    pass
+
 #
 # END REPORTS ENDPOINTS
 #
@@ -196,32 +231,45 @@ def delete_report():
 #
 
 
-@limiter.limit("10 per second", key_func=limit_free_requests)
 @onlyvulns_free.route("/reports", methods=["POST"])
+@limiter.limit("10 per second", key_func=limit_free_requests)
 def list_reports():
     pass
 
 
-@limiter.limit("10 per second", key_func=limit_free_requests)
 @onlyvulns_free.route("/feed", methods=["POST"])
+@limiter.limit("10 per second", key_func=limit_free_requests)
 def report_feed():
     pass
 
 
+@onlyvulns_free.route("/vote", methods=["POST"])
 @limiter.limit("5 per hour", key_func=limit_free_requests)
-@onlyvulns_free.route("/upvote", methods=["POST"])
-def upvote_user():
-    pass
+def vote_on_user():
+    data = request.get_json(force=True)
+    rid = data.get("rid", None)
+    vote_type = data.get("type", None)
+    if rid is None:
+        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied")
+    if vote_type is None:
+        return settings.build_json_report(None, is_error=True, error_string="No vote type provided")
+    if vote_type not in ["up", "down"]:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid vote type provided")
+    user_exists = sql.find_researcher_by_id(rid)
+    if user_exists is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    associated_user_email = user_exists['email_address']
+    if associated_user_email is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    success = sql.change_researcher_reputation(associated_user_email, downvote=True if vote_type == "down" else False)
+    if success:
+        return settings.build_json_report({"ok": True})
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Unable to change researcher reputation")
 
 
-@limiter.limit("5 per hour", key_func=limit_free_requests)
-@onlyvulns_free.route("/downvote", methods=["POST"])
-def downvote_user():
-    pass
-
-
-@limiter.limit("5 per second", key_func=limit_free_requests)
 @onlyvulns_free.route("/researcher", methods=["POST"])
+@limiter.limit("5 per second", key_func=limit_free_requests)
 def get_researcher():
     pass
 
