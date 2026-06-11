@@ -26,6 +26,7 @@ def build_id(**kwargs):
 def build_json_report(output, **kwargs):
     is_error = kwargs.get('is_error', False)
     error_string = kwargs.get('error_string', None)
+    is_free_request = kwargs.get("is_free_request", False)
 
     if output is None:
         output = {}
@@ -46,6 +47,8 @@ def build_json_report(output, **kwargs):
         "request_id": build_id(),
         "request_timestamp": int(time.time())
     }
+    if is_free_request:
+        retval['metadata']['note'] = "Made with <3 by PCEF; consider donating: https://perkinsfund.org/donations"
     return retval
 
 
