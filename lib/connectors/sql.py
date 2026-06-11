@@ -27,6 +27,19 @@ def get_client():
         raise ClientError(f"unable to create client connection: {str(e)}")
 
 
+@security.sanitize_mongo_args("researcher_id")
+def find_researcher_by_id(researcher_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        results = collection.find_one({"user_id": researcher_id})
+    except:
+        results = None
+    return results
+
+
 @security.sanitize_mongo_args("email_address", "magic_link_data")
 def update_magic_link(email_address, magic_link_data):
     client = get_client()

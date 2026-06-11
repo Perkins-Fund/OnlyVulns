@@ -1,6 +1,7 @@
 import uuid
 import json
 import time
+import ipaddress
 
 from itsdangerous import URLSafeTimedSerializer
 
@@ -82,3 +83,77 @@ def verify_token(token, is_admin=False):
             return data['token']
     except:
         return None
+
+
+def is_valid_ip(value):
+    if not value:
+        return False
+    try:
+        ipaddress.ip_address(value.strip())
+        return True
+    except:
+        return False
+
+
+def normalize_ip_value(value):
+    if not value:
+        return None
+    value = value.strip()
+    if value.startswith('[') and value.endswith(']'):
+        value = value[1:-1]
+    if is_valid_ip(value):
+        return value
+    return None
+
+
+def valid_from_csv(value, delim=","):
+    if not value:
+        return None
+    for item in value.split(delim):
+        ip = normalize_ip_value(item)
+        if ip:
+            return ip
+    return None
+
+
+def get_client_ip(req, fallback_func):
+    cf_headers = (
+        "CF-Connecting-IP",
+        "True-Client-IP",
+        "CF-Pseudo-IPv4"
+    )
+    single_ip_headers = (
+        "X-Real-IP",
+        "X-Client-IP",
+        "X-Forwarded",
+        "Forwarded-For",
+        "X-Cluster-Client-IP",
+        "Fastly-Client-IP",
+        "Fly-Client-IP",
+        "X-Appengine-User-IP",
+        "X-Azure-ClientIP",
+        "X-Original-Forwarded-For",
+    )
+    for header in cf_headers:
+        ip = normalize_ip_value(req.headers.get(header))
+        if ip:
+            return ip
+    for header in single_ip_headers:
+        ip = normalize_ip_value(req.headers.get(header))
+        if ip:
+            return ip
+    forwarded = req.headers.get("Forwarded")
+    ip = valid_from_csv(forwarded, delim=";")
+    if ip:
+        return ip
+    ip = valid_from_csv(req.headers.get("X-Forwarded-For"), delim=",")
+    if ip:
+       return ip
+    ip = normalize_ip_value(req.remote_addr)
+    if ip:
+        return ip
+    ip = normalize_ip_value(fallback_func())
+    if ip:
+        return ip
+    return None
+

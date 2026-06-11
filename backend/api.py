@@ -1,6 +1,5 @@
 import hashlib
 import datetime
-from http.client import HTTPException
 
 from flask import Flask, request, Blueprint
 from flask_limiter.util import get_remote_address
@@ -13,6 +12,11 @@ import lib.connectors.emails.send_emails as send_emails
 
 app = Flask(__name__)
 onlyvulns_v1 = Blueprint('onlyvulns', __name__, url_prefix='/api/v1')
+onlyvulns_free = Blueprint('onlyvulns_free', __name__, url_prefix='/api/free')
+
+
+def limit_free_requests():
+    return f"ip:{settings.get_client_ip(request, get_remote_address)}"
 
 
 def limit_requests():
@@ -24,7 +28,7 @@ def limit_requests():
         token = request.args.get("token")
     if token:
         return f"tok:{token}"
-    return f"ip:{get_remote_address()}"
+    return f"ip:{settings.get_client_ip(request, get_remote_address)}"
 
 
 conf = settings.load_env()
@@ -58,7 +62,7 @@ def public_home():
 
 
 #
-# CREATE RESEARCHER LOGIN
+# START RESEARCHER LOGIN
 #
 
 @onlyvulns_v1.route("/researcher/register", methods=["POST"])
@@ -164,3 +168,64 @@ def refresh_magic_link():
 # END RESEARCHER LOGIN
 #
 
+#
+# START REPORTS ENDPOINTS
+#
+
+
+@onlyvulns_v1.route("/reports/create", methods=["POST"])
+def create_report():
+    pass
+
+
+@onlyvulns_v1.route("/reports/search", methods=["POST"])
+def search_report():
+    pass
+
+
+@onlyvulns_v1.route("/reports/delete", methods=["POST"])
+def delete_report():
+    pass
+
+#
+# END REPORTS ENDPOINTS
+#
+
+#
+# START PUBLIC ENDPOINTS
+#
+
+
+@limiter.limit("10 per second", key_func=limit_free_requests)
+@onlyvulns_free.route("/reports", methods=["POST"])
+def list_reports():
+    pass
+
+
+@limiter.limit("10 per second", key_func=limit_free_requests)
+@onlyvulns_free.route("/feed", methods=["POST"])
+def report_feed():
+    pass
+
+
+@limiter.limit("5 per hour", key_func=limit_free_requests)
+@onlyvulns_free.route("/upvote", methods=["POST"])
+def upvote_user():
+    pass
+
+
+@limiter.limit("5 per hour", key_func=limit_free_requests)
+@onlyvulns_free.route("/downvote", methods=["POST"])
+def downvote_user():
+    pass
+
+
+@limiter.limit("5 per second", key_func=limit_free_requests)
+@onlyvulns_free.route("/researcher", methods=["POST"])
+def get_researcher():
+    pass
+
+
+#
+# END PUBLIC ENDPOINTS
+#
