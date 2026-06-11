@@ -40,6 +40,7 @@ def build_json_report(output, **kwargs):
             retval["error"]['error_string'] = 'Failed to make request'
         else:
             retval['error']['error_string'] = error_string
+        retval['error']['error_id'] = build_id(is_error=True)
     else:
         success = True
     retval['success'] = success
