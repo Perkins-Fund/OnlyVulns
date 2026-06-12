@@ -3,10 +3,11 @@ import datetime
 import gridfs
 import pymongo
 
+from bson import ObjectId
 from pymongo import UpdateOne
+from mongo_secure import sanitize
 
 import lib.settings as settings
-import lib.connectors.security as security
 
 
 class ClientError(Exception): pass
@@ -35,17 +36,53 @@ def gridfs_client():
     return gridfs.GridFS(db, collection=conf['database']['collections']['users']['files'])
 
 
-def get_report_files(report_id):
-    client = gridfs_client()
+@sanitize("report_id")
+def get_report_by_report_id(report_id, remove_data=False):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['reports']]
     try:
-        file_data = client.get(report_id)
-        bytes_ = file_data.read()
-        filename = file_data.filename
-        metadata = file_data.metadata
+        if not remove_data:
+            return collection.find_one({"report_id": report_id})
+        else:
+            return collection.find_one(
+                {"report_id": report_id},
+                {
+                    "_id": 0,
+                    "report_files.attached_files.file_upload_id": 0,
+                    "report_files.attached_files.upload_error": 0,
+                    "report_files.attached_files.uploaded": 0
+                }
+            )
     except:
-        return None, None, None
+        return None
 
 
+def get_report_files(report_data):
+    client = gridfs_client()
+    files = []
+    report_files = report_data["report_files"]
+    for file_ in report_files['attached_files']:
+        try:
+            uuid = file_['file_upload_id']
+            file_data = client.get(ObjectId(uuid))
+            bytes_ = file_data.read()
+            filename = file_data.filename
+            metadata = file_data.metadata
+            files.append({
+                "filename": filename,
+                "raw_bytes": bytes_.decode('utf-8', errors="ignore"),
+                "sha256": metadata["integrity_hash"],
+                "file_byte_size": metadata["file_upload_size"],
+                "upload_date": metadata["file_uploaded_on"]
+            })
+        except:
+            pass
+    return files
+
+
+@sanitize("report_id", "researcher_id", "filename", "content_type")
 def store_report_files(report_id, researcher_id, fh, filename, content_type, **kwargs):
     original_filename = kwargs.get("original_filename", None)
     file_size = kwargs.get("file_size", None)
@@ -74,10 +111,24 @@ def store_report_files(report_id, researcher_id, fh, filename, content_type, **k
         return None
 
 
-def get_last_report():
-    pass
+def get_reports(limit=200):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['reports']]
+    try:
+        reports = collection.find({}, {
+            "_id": 0,
+            "report_files.attached_files.file_upload_id": 0,
+            "report_files.attached_files.upload_error": 0,
+            "report_files.attached_files.uploaded": 0
+        }).sort("_id", -1).limit(limit)
+        return list(reports)
+    except:
+        return []
 
 
+@sanitize("researcher_id", "report_title", "report_cvss", "report_vendor", "report_write_up")
 def add_report(researcher_id, wait_time, release_days, report_title, report_cvss, report_vendor, report_files, report_id, report_write_up):
     client = get_client()
     conf = settings.load_env()
@@ -98,6 +149,7 @@ def add_report(researcher_id, wait_time, release_days, report_title, report_cvss
             "cvss_score": report_cvss,
             "associated_vendor": report_vendor,
             "report_write_up": report_write_up,
+            "current_status": "embargo",
             "report_files": {
                 "total_files": len(report_files),
                 "attached_files": report_files
@@ -114,7 +166,7 @@ def add_report(researcher_id, wait_time, release_days, report_title, report_cvss
 
 
 
-@security.sanitize_mongo_args("email_address")
+@sanitize("email_address")
 def change_researcher_reputation(email_address, amount=1, downvote=False):
     client = get_client()
     conf = settings.load_env()
@@ -130,7 +182,7 @@ def change_researcher_reputation(email_address, amount=1, downvote=False):
         return False
 
 
-@security.sanitize_mongo_args("researcher_id")
+@sanitize("researcher_id")
 def find_researcher_by_id(researcher_id):
     client = get_client()
     conf = settings.load_env()
@@ -143,7 +195,7 @@ def find_researcher_by_id(researcher_id):
     return results
 
 
-@security.sanitize_mongo_args("email_address", "magic_link_data")
+@sanitize("email_address", "magic_link_data")
 def update_magic_link(email_address, magic_link_data):
     client = get_client()
     conf = settings.load_env()
@@ -158,7 +210,7 @@ def update_magic_link(email_address, magic_link_data):
         return False
 
 
-@security.sanitize_mongo_args("email_address")
+@sanitize("email_address")
 def verify_user(email_address):
     client = get_client()
     conf = settings.load_env()
@@ -181,7 +233,7 @@ def verify_user(email_address):
         return False
 
 
-@security.sanitize_mongo_args("email_address")
+@sanitize("email_address")
 def find_user_by_email(email_address):
     client = get_client()
     conf = settings.load_env()
@@ -194,7 +246,7 @@ def find_user_by_email(email_address):
     return results
 
 
-@security.sanitize_mongo_args("user_email")
+@sanitize("user_email")
 def register_user(user_email, magic_link):
     client = get_client()
     conf = settings.load_env()

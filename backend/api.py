@@ -245,7 +245,6 @@ def create_report():
                 "upload_error": None,
                 "content_type": file_content_type,
                 "file_id": file_id,
-                "sha256": file_hash,
                 "file_upload_id": str(uploaded_file)
             })
         except Exception as e:
@@ -255,7 +254,6 @@ def create_report():
                 "upload_error": str(e),
                 "content_type": file_content_type,
                 "file_id": file_id,
-                "sha256": file_hash,
                 "file_upload_id": None
             })
     is_report_created = sql.add_report(
@@ -281,11 +279,6 @@ def create_report():
         return settings.build_json_report(None, is_error=True, error_string="Unable to create report")
 
 
-@onlyvulns_v1.route("/reports/search", methods=["POST"])
-def search_report():
-    pass
-
-
 @onlyvulns_v1.route("/reports/delete", methods=["POST"])
 def delete_report():
     pass
@@ -304,10 +297,45 @@ def edit_report():
 #
 
 
-@onlyvulns_free.route("/reports", methods=["POST"])
+@onlyvulns_free.route("/reports/search", methods=["POST"])
+@limiter.limit("10 per second", key_func=limit_free_requests)
+def search_report():
+    data = request.get_json(force=True)
+    report_id = data.get("report_id", None)
+    if report_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided")
+    report_data = sql.get_report_by_report_id(report_id)
+    if report_data is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided")
+    if report_data['current_status'] != "released":
+        report_files = None
+        file_status = "locked"
+    else:
+        report_files = sql.get_report_files(report_data)
+        file_status = "unlocked"
+    retval = {
+        "report_information": {
+            "title": report_data["report_title"],
+            "report_id": report_id,
+            "report_body": report_data["report_write_up"],
+            "report_status": report_data['current_status'],
+        },
+        "attached_files": report_files,
+        "report_metadata": {
+            "report_release_date": report_data["metadata"]['wait_end_date'],
+            "associated_researcher": report_data['associated_researcher'],
+            "report_upload_date": report_data["metadata"]['date_reported_on'],
+            "report_files_status": file_status,
+        }
+    }
+    return settings.build_json_report(retval)
+
+
+
+@onlyvulns_free.route("/reports", methods=["GET"])
 @limiter.limit("10 per second", key_func=limit_free_requests)
 def list_reports():
-    pass
+    return settings.build_json_report(sql.get_reports())
 
 
 @onlyvulns_free.route("/feed", methods=["POST"])
