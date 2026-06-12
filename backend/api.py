@@ -331,7 +331,6 @@ def search_report():
     return settings.build_json_report(retval)
 
 
-
 @onlyvulns_free.route("/reports", methods=["GET"])
 @limiter.limit("10 per second", key_func=limit_free_requests)
 def list_reports():
@@ -372,7 +371,41 @@ def vote_on_user():
 @onlyvulns_free.route("/researcher", methods=["POST"])
 @limiter.limit("5 per second", key_func=limit_free_requests)
 def get_researcher():
-    pass
+    data = request.get_json(force=True)
+    researcher_id = data.get("researcher_id", None)
+    if researcher_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied")
+    user_exists = sql.get_researcher_by_researcher_id(researcher_id)
+    if user_exists is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    user_reports = sql.get_reports_by_researcher_id(researcher_id)
+    return settings.build_json_report({
+        "researcher_id": researcher_id,
+        "researcher_registration_date": user_exists['registered_at'],
+        "researcher_reputation": user_exists['reputation'],
+        "researcher_total_reports": user_exists['total_reports'],
+        "is_researcher_verified": user_exists['is_verified'],
+        "researcher_tips": {
+            "is_researcher_eligible": user_exists['researcher_tips']['is_researcher_eligible'],
+            "is_accepted_by_researcher": user_exists['researcher_tips']['accepted_by_researcher'],
+        },
+        "researcher_reports": user_reports,
+    })
+
+
+@onlyvulns_free.route("/researcher/reputation", methods=["GET"])
+@limiter.limit("5 per second", key_func=limit_free_requests)
+def get_researcher_by_reputation():
+    users = sql.get_users_by_highest_reputation()
+    retval = []
+    for user in users:
+        retval.append({
+            "researcher_id": user['user_id'],
+            "researcher_reputation": user['reputation'],
+            "researcher_total_reports": user['total_reports'],
+            "researcher_eligible_for_tips": user['researcher_tips']['is_researcher_eligible']
+        })
+    return settings.build_json_report(retval)
 
 
 #

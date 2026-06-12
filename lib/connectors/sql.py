@@ -111,6 +111,19 @@ def store_report_files(report_id, researcher_id, fh, filename, content_type, **k
         return None
 
 
+@sanitize("researcher_id")
+def get_reports_by_researcher_id(researcher_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['reports']]
+    try:
+        reports = collection.find({"associated_researcher": researcher_id}, {"_id": 0, "report_id": 1, "report_title": 1})
+        return [[report["report_id"], report["report_title"]] for report in reports if "report_id" in report]
+    except:
+        return []
+
+
 def get_reports(limit=200):
     client = get_client()
     conf = settings.load_env()
@@ -164,6 +177,28 @@ def add_report(researcher_id, wait_time, release_days, report_title, report_cvss
     except:
         return False
 
+
+def get_users_by_highest_reputation(limit=300):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        return list(collection.find().sort("reputation", -1).limit(limit))
+    except:
+        return []
+
+
+@sanitize("researcher_id")
+def get_researcher_by_researcher_id(researcher_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        return collection.find_one({"user_id": researcher_id}, {"_id": 0})
+    except:
+        return None
 
 
 @sanitize("email_address")
