@@ -16,6 +16,13 @@ onlyvulns_v1 = Blueprint('onlyvulns', __name__, url_prefix='/api/v1')
 onlyvulns_free = Blueprint('onlyvulns_free', __name__, url_prefix='/api/free')
 
 
+def limit_reputation_change():
+    client_ip = settings.get_client_ip(request, get_remote_address)
+    data = request.get_json(silent=True) or {}
+    rid = data.get("rid", "missing")
+    return f"vote:ip:{client_ip}:rid:{rid}"
+
+
 def limit_free_requests():
     return f"ip:{settings.get_client_ip(request, get_remote_address)}"
 
@@ -271,6 +278,8 @@ def create_report():
         del report['file_upload_id']
         del report['upload_error']
     if is_report_created:
+        sql.increase_researcher_report_count(user_exists['user_id'])
+        sql.change_researcher_reputation(user_exists['user_id'])
         return settings.build_json_report({
             "report_id": report_id,
             "files": file_reports
@@ -307,12 +316,11 @@ def search_report():
     report_data = sql.get_report_by_report_id(report_id)
     if report_data is None:
         return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided")
-    if report_data['current_status'] != "released":
+    file_status = report_data['report_files']['file_status']
+    if file_status == "locked":
         report_files = None
-        file_status = "locked"
     else:
         report_files = sql.get_report_files(report_data)
-        file_status = "unlocked"
     retval = {
         "report_information": {
             "title": report_data["report_title"],
@@ -344,7 +352,7 @@ def report_feed():
 
 
 @onlyvulns_free.route("/vote", methods=["POST"])
-@limiter.limit("5 per hour", key_func=limit_free_requests)
+@limiter.limit("25 per hour", key_func=limit_reputation_change)
 def vote_on_user():
     data = request.get_json(force=True)
     rid = data.get("rid", None)
@@ -358,6 +366,8 @@ def vote_on_user():
     user_exists = sql.find_researcher_by_id(rid)
     if user_exists is None:
         return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    if user_exists['reputation'] < settings.MAX_LEAST_REP:
+        return settings.build_json_report(None, is_error=True, error_string="User reputation cannot be downvoted")
     associated_user_email = user_exists['email_address']
     if associated_user_email is None:
         return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")

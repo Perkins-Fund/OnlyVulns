@@ -165,7 +165,8 @@ def add_report(researcher_id, wait_time, release_days, report_title, report_cvss
             "current_status": "embargo",
             "report_files": {
                 "total_files": len(report_files),
-                "attached_files": report_files
+                "attached_files": report_files,
+                "file_status": "locked"
             },
             "metadata": {
                 "date_reported_on": now.isoformat(),
@@ -199,6 +200,22 @@ def get_researcher_by_researcher_id(researcher_id):
         return collection.find_one({"user_id": researcher_id}, {"_id": 0})
     except:
         return None
+
+
+@sanitize("researcher_id")
+def increase_researcher_report_count(researcher_id, amount=1, down=False):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        results = collection.update_one(
+            {"user_id": researcher_id},
+            {"$inc": {"total_reports": +amount if not down else -amount}},
+        )
+        return results.modified_count == 1
+    except:
+        return False
 
 
 @sanitize("email_address")

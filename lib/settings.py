@@ -11,6 +11,7 @@ from itsdangerous import URLSafeTimedSerializer
 MAX_FILES_PER_REPORT = 5
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB total size
+MAX_LEAST_REP = -10
 
 
 def load_env():
