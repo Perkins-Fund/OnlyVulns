@@ -213,3 +213,7 @@ def validate_file_upload(files):
         if total_size > MAX_TOTAL_FILE_SIZE:
             return False, "Max file size per report exceeded"
     return True, None
+
+
+def generate_username():
+    return hashlib.sha256(os.urandom(64)).hexdigest()[0:9]

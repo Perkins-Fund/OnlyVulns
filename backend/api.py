@@ -1,3 +1,4 @@
+import time
 import hashlib
 import datetime
 
@@ -5,15 +6,27 @@ from flask import Flask, request, Blueprint
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 from werkzeug.utils import secure_filename
+from flask_limiter.errors import RateLimitExceeded
 
 import lib.settings as settings
 import lib.connectors.sql as sql
+import lib.connectors.chat.rooms as chatrooms
 import lib.connectors.emails.send_emails as send_emails
 
 
 app = Flask(__name__)
 onlyvulns_v1 = Blueprint('onlyvulns', __name__, url_prefix='/api/v1')
 onlyvulns_free = Blueprint('onlyvulns_free', __name__, url_prefix='/api/free')
+onlyvulns_chats = Blueprint('onlyvulns_chats', __name__, url_prefix='/api/rooms')
+
+
+def limit_chat_sends():
+    client_ip = settings.get_client_ip(request, get_remote_address)
+    data = request.get_json(silent=True) or {}
+    token = data.get("chat_token")
+    if token:
+        return f"chat:send:token:{token}:ip:{client_ip}"
+    return f"chat:send:ip:{client_ip}:missing-token"
 
 
 def limit_reputation_change():
@@ -53,6 +66,47 @@ limiter = Limiter(
 def handler_429(_):
     app.logger.warning("Hit request rate limit")
     return settings.build_json_report(None, is_error=True, error_string="You have been rate limited, 50 requests per 1 second.")
+
+
+@onlyvulns_chats.errorhandler(RateLimitExceeded)
+def handle_chat_rate_limit(error):
+    data = request.get_json(silent=True) or {}
+    token = data.get("chat_token")
+
+    if request.endpoint != "onlyvulns_chats.send_chat":
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="Rate limit exceeded"
+        ), 429
+
+    result = chatrooms.register_send_rate_violation(token)
+
+    if result["kicked"]:
+        user = result.get("user")
+        username = user.get("username") if user else "A user"
+
+        now_ts = int(time.time())
+        expires_at = now_ts + chatrooms.CHAT_TTL
+
+        chatrooms.add_message({
+            "type": "system",
+            "author": "system",
+            "message": f"{username} was kicked for spamming",
+            "sent_at": now_ts,
+            "expires": expires_at,
+        }, expires_at)
+
+        return settings.build_json_report({
+            "kicked": True,
+            "clear_token": True,
+        }, is_error=True, error_string="You were kicked for exceeding the send rate limit"), 429
+
+    return settings.build_json_report({
+        "kicked": False,
+        "clear_token": False,
+        "violations": result["violations"],
+    }, is_error=True, error_string="Rate limit exceeded. One more send-rate violation will remove your chat account"), 429
 
 
 @app.errorhandler(Exception)
@@ -420,4 +474,109 @@ def get_researcher_by_reputation():
 
 #
 # END PUBLIC ENDPOINTS
+#
+
+#
+# START CHAT ROOM ENDPOINTS
+#
+
+@onlyvulns_chats.route("/enter", methods=["GET"])
+@limiter.limit("2 per day", key_func=limit_chat_sends)
+def enter_chat():
+    user = chatrooms.create_chat_user()
+    now_ts = int(time.time())
+    expires_at = now_ts + chatrooms.CHAT_TTL
+    chatrooms.add_message({
+        "type": "system",
+        "author": user['username'],
+        "message": f"{user['username']} has entered the chat",
+        "sent_at": now_ts,
+        "expires": expires_at,
+    }, expires_at)
+    return settings.build_json_report({
+        "username": user['username'],
+        "chat_token": user['chat_token'],
+        "expires_at": user['expires_at']
+    })
+
+
+@onlyvulns_chats.route("/send", methods=["POST"])
+@limiter.limit("3 per second", key_func=limit_chat_sends)
+def send_chat():
+    data = request.get_json(force=True) or {}
+    message = data.get("message", None)
+    token = data.get("chat_token", None)
+    if message is None:
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="No message provided"
+        )
+    if token is None:
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="No chat token provided"
+        )
+
+    user = chatrooms.get_chat_user(token)
+
+    if not user:
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="Invalid or expired chat token provided"
+        )
+
+    if not isinstance(message, str):
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="Message must be a string"
+        )
+
+    message = message.strip()
+    if not message:
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="Message cannot be empty"
+        )
+    if len(message) > 15000:
+        return settings.build_json_report(
+            None,
+            is_error=True,
+            error_string="Message too long"
+        )
+
+    now_ts = int(time.time())
+    expires_at = now_ts + chatrooms.CHAT_TTL
+    chatrooms.add_message({
+        "type": "message",
+        "author": user["username"],
+        "message": message,
+        "sent_at": now_ts,
+        "expires": expires_at,
+    }, expires_at)
+    return settings.build_json_report({"ok": True})
+
+
+@onlyvulns_chats.route("/view", methods=["POST"])
+@limiter.limit("10 per second", key_func=limit_chat_sends)
+def view_chat():
+    data = request.get_json(force=True)
+    token = data.get("chat_token", None)
+    if token is None:
+        return settings.build_json_report(None, is_error=True, error_string="No chat token provided")
+    user = chatrooms.get_chat_user(token)
+    if not user:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid chat token provided")
+    messages = chatrooms.get_messages()
+    return settings.build_json_report({
+        "username": user['username'],
+        "messages": messages
+    })
+
+#
+# END CHAT ROOM ENDPOINTS
 #
