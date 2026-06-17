@@ -21,7 +21,7 @@ def build_sign_in_link(researcher_id, expires_in=120):
         "token": token,
         "rid": researcher_id,
     })
-    sign_in_link = f"{conf['emails']['base_url']}/api/v1/researcher/magiclink?{query}"
+    sign_in_link = f"{conf['emails']['base_url']}/login.html?{query}"
     return {
         "sign_in_link": sign_in_link,
         "token_hash": token_hash,

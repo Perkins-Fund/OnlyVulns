@@ -163,12 +163,19 @@ def whoami_researcher():
             user_exists = sql.find_user_by_email(good_token)
             if not user_exists:
                 return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+
             return settings.build_json_report({
                 "researcher_id": user_exists['user_id'],
                 "is_verified": user_exists['is_verified'],
                 "registration_date": user_exists['registered_at'],
                 "researcher_reputation": user_exists['reputation'],
-                "researcher_total_reports": user_exists['total_reports']
+                "researcher_total_reports": user_exists['total_reports'],
+                "researcher_tips": {
+                    "onboarded": user_exists['researcher_tips']['stripe_onboarding_complete'],
+                    "is_eligible": user_exists['researcher_tips']['is_researcher_eligible'],
+                    "accepting_tips": user_exists['researcher_tips']['accepted_by_researcher'],
+                    "last_payout_day": user_exists['researcher_tips']['last_payout_on'],
+                }
             })
         else:
             return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")

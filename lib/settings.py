@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import json
 import time
@@ -18,6 +19,44 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB total size
 MAX_LEAST_REP = -10
 FILTER_LIST = os.getenv("FILTER_LIST") or f"{os.getcwd()}{os.path.sep}data{os.path.sep}bad_words.json"
+PII_PATTERNS = [
+    re.compile(
+        r"\b(?:25[0-5]|2[0-4]\d|1?\d?\d)"
+        r"(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}\b"
+    ),
+    re.compile(
+        r"\b(?:[a-fA-F0-9]{1,4}:){2,7}[a-fA-F0-9]{1,4}\b"
+    ),
+    re.compile(
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"
+    ),
+    re.compile(
+        r"""
+        (?<!\w)
+        (?:\+?\d{1,3}[\s.-]?)?
+        (?:\(?\d{3}\)?[\s.-]?)?
+        \d{3}[\s.-]?\d{4}
+        (?:\s*(?:x|ext\.?)\s*\d{1,6})?
+        (?!\w)
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:https?://|www\.)[^\s<>'\"]+",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![\w.])@[A-Za-z0-9_]{2,30}\b"
+    ),
+    re.compile(
+        r"""
+        \b(?:https?://)?(?:www\.)?
+        (?:twitter|x|instagram|facebook|fb|tiktok|linkedin|snapchat|threads)\.com/
+        [A-Za-z0-9._%/@+-]+
+        """,
+        re.VERBOSE | re.IGNORECASE,
+    ),
+]
 
 
 def load_env():
@@ -407,6 +446,20 @@ def build_xml_feed(reports):
     return build_rss_feed(reports, is_xml=True)
 
 
+def mask(value):
+    return "*" * len(value)
+
+
+def escape(value):
+    return html.escape(value)
+
+
+def redact_pii(value):
+    for pattern in PII_PATTERNS:
+        value = pattern.sub(lambda m: mask(m.group(0)), value)
+    return value
+
+
 def filter_language(s):
     try:
         filters = json.load(open(FILTER_LIST, encoding="utf-8"))
@@ -416,7 +469,9 @@ def filter_language(s):
     retval = []
     for word in words:
         if any(filter_ in word for filter_ in filters):
-            retval.append("*" * len(word))
+            retval.append(mask(word))
         else:
-            retval.append(html.escape(word))
+            word = escape(word)
+            word = redact_pii(word)
+            retval.append(word)
     return " ".join(retval)
