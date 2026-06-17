@@ -365,6 +365,47 @@ def delay_report_release():
 #
 
 
+@onlyvulns_free.route("/abuse", methods=["POST"])
+@limiter.limit("1 per minute")
+def report_abuse():
+    data = request.get_json(force=True)
+    report_reason = data.get("report_reason", None)
+    report_id = data.get("report_id", None)
+
+    if report_reason is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_reason provided", is_free_request=True)
+    if report_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_id provided", is_free_request=True)
+
+    available_reasons = (
+        "spam_or_fake_report",
+        "malicious_or_weaponized_content",
+        "contains_credentials_or_secrets",
+        "contains_personal_data",
+        "harassment_or_doxxing",
+        "extortion_or_threats",
+        "copyright_or_confidential_material",
+        "incorrect_or_fraudulent_claim",
+        "duplicate_or_low_quality",
+        "other_policy_violation"
+    )
+
+    if report_reason not in list(available_reasons):
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_reason provided", is_free_request=True)
+
+    report = sql.get_report_by_report_id(report_id)
+    if report is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided", is_free_request=True)
+    is_reported = sql.insert_audit_log(
+        "reported", "user_reported_researcher", f"report came in for report ID: {report_id}",
+        actor_id="guest", actor_type="guest_user", target_type="report_researcher"
+    )
+    if is_reported:
+        return settings.build_json_report({"ok": True})
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Unable to create report", is_free_request=True)
+
+
 @onlyvulns_free.route("/reports/search", methods=["POST"])
 @limiter.limit("10 per second", key_func=limit_free_requests)
 def search_report():
@@ -406,7 +447,7 @@ def list_reports():
 
 @onlyvulns_free.route("/feed", methods=["GET"])
 @onlyvulns_free.route("/feed.<feed_format>", methods=["GET"])
-@limiter.limit("1000000 per hour", key_func=limit_free_requests)
+@limiter.limit("10 per hour", key_func=limit_free_requests)
 def report_feed(feed_format=None):
     requested_format = feed_format or request.args.get("format") or "json"
     print(requested_format)

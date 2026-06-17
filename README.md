@@ -509,10 +509,10 @@ The goal is not to give vendors control over the platform. The goal is to create
 
 ### Community Features
 
-* [ ] Vote on disclosures
-* [ ] Vote on vulnerability quality
+* [x] Vote on disclosures
+* [x] Vote on vulnerability quality
 * [ ] Comment on public disclosures
-* [ ] Report abuse
+* [x] Report abuse
 * [ ] Tip researchers
 * [ ] Tip the platform
 * [ ] Follow researchers

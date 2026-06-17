@@ -60,8 +60,9 @@ def insert_audit_log(action, action_type, msg, **kwargs):
                 "target_type": target_type
             }
         })
+        return True
     except Exception as e:
-        pass
+        return False
 
 
 @sanitize("audit_id")

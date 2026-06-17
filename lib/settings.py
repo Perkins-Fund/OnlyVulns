@@ -28,6 +28,7 @@ def build_id(**kwargs):
     is_report_id = kwargs.get('is_report_id', False)
     is_file_id = kwargs.get('is_file_id', False)
     is_audit_id = kwargs.get('is_audit_id', False)
+    is_report_id = kwargs.get('is_report_id', False)
 
     if is_error:
         template = "err_"
@@ -39,6 +40,8 @@ def build_id(**kwargs):
         template = ""
     elif is_audit_id:
         template = "adt_"
+    elif is_report_id:
+        template = "urp_"  # user report process
     else:
         template = "req_"
     return f"{template}{uuid.uuid4().hex}"
