@@ -442,7 +442,7 @@ def report_abuse():
     if report is None:
         return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided", is_free_request=True)
     is_reported = sql.insert_audit_log(
-        "reported", "user_reported_researcher", f"report came in for report ID: {report_id}",
+        "reported", "user_reported_researcher", f"report came in for report ID: {report_id} (reported for: {report_reason})",
         actor_id="guest", actor_type="guest_user", target_type="report_researcher"
     )
     if is_reported:
