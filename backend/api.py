@@ -2,7 +2,7 @@ import time
 import hashlib
 import datetime
 
-from flask import Flask, request, Blueprint, redirect, url_for, Response
+from flask import Flask, request, Blueprint, Response
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 from werkzeug.utils import secure_filename
