@@ -366,7 +366,7 @@ def delay_report_release():
 
 
 @onlyvulns_free.route("/reports/comment", methods=["POST"])
-@limiter.limit("50000 per hour", key_func=limit_reputation_change)
+@limiter.limit("5 per hour", key_func=limit_reputation_change)
 def comment_on_report():
     data = request.get_json(force=True)
     report_id = data.get("report_id", None)

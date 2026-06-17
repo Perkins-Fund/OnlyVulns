@@ -345,7 +345,7 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] Community votes up or down the disclosure
 * [x] Community votes up or down the vulnerability quality
 * [x] Researcher community-based reputation
-* [ ] Comment system
+* [x] Comment system
 * [ ] Comment moderation
 * [ ] Abuse reporting
 * [ ] Research quality indicators
@@ -358,7 +358,7 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [ ] Trending disclosures
 * [x] Top researchers
 * [x] Researcher contribution history
-* [ ] Comment rate limiting
+* [x] Comment rate limiting
 
 ### Threat Intelligence and Public Data
 
@@ -511,7 +511,7 @@ The goal is not to give vendors control over the platform. The goal is to create
 
 * [x] Vote on disclosures
 * [x] Vote on vulnerability quality
-* [ ] Comment on public disclosures
+* [x] Comment on public disclosures
 * [x] Report abuse
 * [ ] Tip researchers
 * [ ] Tip the platform
