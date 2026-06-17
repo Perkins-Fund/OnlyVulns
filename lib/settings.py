@@ -27,6 +27,7 @@ def build_id(**kwargs):
     is_user_id = kwargs.get('is_user_id', False)
     is_report_id = kwargs.get('is_report_id', False)
     is_file_id = kwargs.get('is_file_id', False)
+    is_audit_id = kwargs.get('is_audit_id', False)
 
     if is_error:
         template = "err_"
@@ -36,6 +37,8 @@ def build_id(**kwargs):
         template = "rep_"
     elif is_user_id:
         template = ""
+    elif is_audit_id:
+        template = "adt_"
     else:
         template = "req_"
     return f"{template}{uuid.uuid4().hex}"
@@ -199,6 +202,12 @@ def get_file_hash_from_stream(storage, alg="sha256", chunk_size=1024*1024):
             break
         h.update(chunk)
     stream.seek(pos)
+    return h.hexdigest()
+
+
+def get_string_hash(s):
+    h = hashlib.sha256()
+    h.update(s.encode())
     return h.hexdigest()
 
 

@@ -36,6 +36,58 @@ def gridfs_client():
     return gridfs.GridFS(db, collection=conf['database']['collections']['users']['files'])
 
 
+def insert_audit_log(action, action_type, msg, **kwargs):
+    actor_id = kwargs.get("actor_id", "???")
+    actor_type = kwargs.get("actor_type", "???")
+    target_type = kwargs.get("target_type", "???")
+
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['admin']['audit_log']]
+    try:
+        collection.insert_one({
+            "action_taken": action,
+            "action_type": action_type,
+            "date_action_taken": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+            "action_message": msg,
+            "audit_id": settings.build_id(is_audit_id=True),
+            "actor": {
+                "actor_id": actor_id,
+                "actor_type": actor_type,
+            },
+            "target": {
+                "target_type": target_type
+            }
+        })
+    except Exception as e:
+        pass
+
+
+@sanitize("audit_id")
+def find_audit_by_id(audit_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['admin']['audit_log']]
+    try:
+        return collection.find_one({"audit_id": audit_id})
+    except:
+        return None
+
+
+def get_audit_logs(limit=500):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['admin']['audit_log']]
+    try:
+        data = collection.find({}, {"_id": 0}).sort("_id", -1).limit(limit)
+        return [item for item in data]
+    except:
+        return []
+
+
 @sanitize("report_id")
 def get_report_by_report_id(report_id, remove_data=False):
     client = get_client()

@@ -386,11 +386,11 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [ ] Report abuse flow
 * [ ] Malware upload scanning
 * [ ] Dangerous payload handling rules
-* [ ] File type restrictions
+* [x] File type restrictions
 * [ ] Sandboxed PoC storage
 * [ ] Automated secret scanning
 * [ ] Automated doxxing/PII detection
-* [ ] Spam prevention
+* [x] Spam prevention
 * [ ] Sybil resistance
 * [ ] Account suspension tools
 * [ ] Disclosure takedown workflow
@@ -439,8 +439,8 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] Display pending disclosures where appropriate
 * [x] Public disclosure detail pages
 * [x] Researcher profile pages
-* [ ] Disclosure timeline view
-* [ ] CVSS severity display
+* [x] Disclosure timeline view
+* [x] CVSS severity display
 * [ ] CVSS vector display
 * [ ] Affected product/version display
 * [ ] Vendor response status display, based on researcher-entered information
@@ -526,20 +526,20 @@ The goal is not to give vendors control over the platform. The goal is to create
 
 ### Platform and Trust
 
-* [ ] About page explaining nonprofit model
-* [ ] Open-source repository links
-* [ ] Public roadmap
+* [x] About page explaining nonprofit model
+* [x] Open-source repository links
+* [x] Public roadmap
 * [ ] Donation transparency page
 * [ ] Moderation policy page
 * [ ] Coordinated disclosure policy page
-* [ ] Researcher protection policy page
-* [ ] Terms of use
+* [x] Researcher protection policy page
+* [x] Terms of use
 * [ ] Privacy policy
-* [ ] Security policy
+* [x] Security policy
 * [ ] Responsible use policy
 * [ ] Takedown policy
 * [ ] Legal request policy
 * [ ] Contact page
 * [ ] Accessibility support
-* [ ] Mobile-friendly layout
-* [ ] Dark mode
+* [x] Mobile-friendly layout
+* [x] Dark mode
