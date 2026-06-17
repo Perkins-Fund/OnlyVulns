@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import time
+import html
 import hashlib
 import ipaddress
 
@@ -16,6 +17,7 @@ MAX_FILES_PER_REPORT = 5
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB total size
 MAX_LEAST_REP = -10
+FILTER_LIST = os.getenv("FILTER_LIST") or f"{os.getcwd()}{os.path.sep}data{os.path.sep}bad_words.json"
 
 
 def load_env():
@@ -28,7 +30,7 @@ def build_id(**kwargs):
     is_report_id = kwargs.get('is_report_id', False)
     is_file_id = kwargs.get('is_file_id', False)
     is_audit_id = kwargs.get('is_audit_id', False)
-    is_report_id = kwargs.get('is_report_id', False)
+    is_comment_id = kwargs.get('is_comment_id', False)
 
     if is_error:
         template = "err_"
@@ -40,8 +42,8 @@ def build_id(**kwargs):
         template = ""
     elif is_audit_id:
         template = "adt_"
-    elif is_report_id:
-        template = "urp_"  # user report process
+    elif is_comment_id:
+        template = "cmt_"
     else:
         template = "req_"
     return f"{template}{uuid.uuid4().hex}"
@@ -403,3 +405,18 @@ def build_rss_feed(reports, is_xml=False):
 
 def build_xml_feed(reports):
     return build_rss_feed(reports, is_xml=True)
+
+
+def filter_language(s):
+    try:
+        filters = json.load(open(FILTER_LIST, encoding="utf-8"))
+    except:
+        filters = []
+    words = s.split(" ")
+    retval = []
+    for word in words:
+        if any(filter_ in word for filter_ in filters):
+            retval.append("*" * len(word))
+        else:
+            retval.append(html.escape(word))
+    return " ".join(retval)

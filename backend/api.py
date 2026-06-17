@@ -365,8 +365,46 @@ def delay_report_release():
 #
 
 
+@onlyvulns_free.route("/reports/comment", methods=["POST"])
+@limiter.limit("50000 per hour", key_func=limit_reputation_change)
+def comment_on_report():
+    data = request.get_json(force=True)
+    report_id = data.get("report_id", None)
+    comment = data.get("comment", None)
+
+    if report_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_id provided", is_free_request=True)
+    if comment is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid comment provided", is_free_request=True)
+
+    report_exists = sql.get_report_by_report_id(report_id)
+    if report_exists is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_id provided", is_free_request=True)
+
+    if len(comment) < 10:
+        return settings.build_json_report(None, is_error=True, error_string="Comment must be greater than 10 characters", is_free_request=True)
+    if len(comment) > 250:
+        return settings.build_json_report(None, is_error=True, error_string="Comment must be less than 250 characters", is_free_request=True)
+    filtered_comment = settings.filter_language(comment)
+    is_accepted = sql.add_comment_to_report(report_id, filtered_comment)
+    if is_accepted:
+        return settings.build_json_report({"ok": True}, is_free_request=True)
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Unable to create report", is_free_request=True)
+
+
+@onlyvulns_free.route("/reports/comment/find", methods=["POST"])
+@limiter.limit("10 per second", key_func=limit_free_requests)
+def get_report_comments():
+    data = request.get_json(force=True)
+    report_id = data.get("report_id", None)
+    if report_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report_id provided", is_free_request=True)
+    data = sql.get_all_report_comments(report_id)
+    return settings.build_json_report(data, is_free_request=True)
+
 @onlyvulns_free.route("/abuse", methods=["POST"])
-@limiter.limit("1 per minute")
+@limiter.limit("1 per minute", key_func=limit_free_requests)
 def report_abuse():
     data = request.get_json(force=True)
     report_reason = data.get("report_reason", None)

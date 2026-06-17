@@ -89,6 +89,49 @@ def get_audit_logs(limit=500):
         return []
 
 
+@sanitize("report_id", "comment")
+def add_comment_to_report(report_id, comment):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['report_comments']]
+    try:
+        collection.insert_one({
+            "comment": comment,
+            "associated_report_id": report_id,
+            "comment_id": settings.build_id(is_comment_id=True),
+            "commented_at": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+            "is_deleted": False
+        })
+        return True
+    except:
+        return False
+
+
+@sanitize("report_id")
+def get_all_report_comments(report_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf["database"]["db_name"]]
+    collection = db[conf["database"]["collections"]["users"]["report_comments"]]
+    try:
+        report_id = str(report_id or "").strip()
+        data = collection.find(
+            {
+                "associated_report_id": report_id,
+                "is_deleted": False
+            },
+            {
+                "_id": 0, "is_deleted": 0
+            }
+        ).sort("commented_at", -1)
+        return list(data)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        return []
+
+
 @sanitize("report_id")
 def get_report_by_report_id(report_id, remove_data=False):
     client = get_client()
