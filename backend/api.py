@@ -124,7 +124,7 @@ def public_home():
 
 
 #
-# START RESEARCHER LOGIN
+# START RESEARCHER ENDPOINTS
 #
 
 @onlyvulns_v1.route("/researcher/register", methods=["POST"])
@@ -227,7 +227,7 @@ def refresh_magic_link():
 
 
 #
-# END RESEARCHER LOGIN
+# END RESEARCHER ENDPOINTS
 #
 
 #
@@ -349,6 +349,11 @@ def delete_report():
 
 @onlyvulns_v1.route("/reports/edit", methods=["POST"])
 def edit_report():
+    pass
+
+
+@onlyvulns_v1.route("/reports/delay", methods=["POST"])
+def delay_report_release():
     pass
 
 #
