@@ -75,7 +75,7 @@ def register_send_rate_violation(token):
     violations, _ = pipe.execute()
     violations = int(violations)
 
-    if violations >= 2:
+    if violations >= 4:
         user = revoke_chat_user(token, reason="send_rate_limit")
         return {
             "violations": violations,
