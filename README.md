@@ -1,4 +1,14 @@
-# OnlyVulns
+<p align="center">
+  <img src=".github/logo.png" alt="OnlyVulns logo" width="80">
+</p>
+
+<h1 align="center">OnlyVulns</h1>
+
+<p align="center">
+  A nonprofit, open-source vulnerability disclosure platform built for security researchers.
+</p>
+
+---
 
 OnlyVulns is a nonprofit, open-source vulnerability disclosure platform built for security researchers.
 
