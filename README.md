@@ -362,17 +362,17 @@ The goal is not to give vendors control over the platform. The goal is to create
 
 ### Threat Intelligence and Public Data
 
-* [ ] Free threat intel feed for disclosed vulnerabilities
-* [ ] RSS feed
-* [ ] JSON feed
+* [x] Free threat intel feed for disclosed vulnerabilities
+* [x] RSS feed
+* [x] JSON feed
 * [x] Public API feed
 * [ ] Webhook support
 * [ ] Search indexing
-* [ ] Export disclosed vulnerability data
+* [x] Export disclosed vulnerability data
 * [ ] Public archive pages
-* [ ] Machine-readable disclosure metadata
+* [x] Machine-readable disclosure metadata
 * [x] Rate limiting for public feeds
-* [ ] Abuse-resistant scraping policy
+* [x] Abuse-resistant scraping policy
 * [ ] Feed filtering by severity
 * [ ] Feed filtering by affected product
 * [ ] Feed filtering by CWE

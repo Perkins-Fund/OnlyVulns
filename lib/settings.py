@@ -5,6 +5,10 @@ import time
 import hashlib
 import ipaddress
 
+from datetime import datetime, timezone
+from email.utils import format_datetime
+from html import escape
+
 from itsdangerous import URLSafeTimedSerializer
 
 
@@ -217,3 +221,173 @@ def validate_file_upload(files):
 
 def generate_username():
     return hashlib.sha256(os.urandom(64)).hexdigest()[0:9]
+
+
+
+def parse_feed_datetime(value):
+    if not value:
+        return datetime.now(timezone.utc)
+
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        try:
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return datetime.now(timezone.utc)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    return dt
+
+
+def get_cvss_score_name(score):
+    try:
+        score = float(score)
+    except:
+        return "Unknown"
+    if score >= 9.0:
+        return "Critical"
+    if score >= 7.0:
+        return "High"
+    if score >= 4.0:
+        return "Medium"
+    if score > 0:
+        return "Low"
+    return "None"
+
+
+def build_json_feed(reports):
+    feed_reports = []
+
+    for report in reports:
+        print(report)
+        if report.get("current_status") != "released":
+            continue
+        tmp = {
+            "id": report.get("report_id"),
+            "title": report.get("report_title"),
+            "raw_cvss_score": report.get("cvss_score"),
+            "readable_cvss_score": get_cvss_score_name(report.get("cvss_score")),
+            "write_up": report.get("report_write_up"),
+            "release_date": report.get("metadata", {}).get("wait_end_date"),
+            "date_reported": report.get("metadata", {}).get("date_reported_on"),
+            "link": f"https://onlyvulns.org/report?report_id={report.get('report_id')}",
+            "vendor": report.get("associated_vendor"),
+            "files": [],
+        }
+        attached_files = (
+            report.get("report_files", {})
+            .get("attached_files", [])
+        )
+        for file_ in attached_files:
+            tmp["files"].append({
+                "sha256": file_.get("file_hash"),
+                "content_type": file_.get("content_type")
+            })
+        feed_reports.append(tmp)
+    return feed_reports
+
+
+def build_file_xml(report):
+    attached_files = (
+        report.get("report_files", {})
+        .get("attached_files", [])
+    )
+
+    if not attached_files:
+        return ""
+
+    file_items = []
+
+    for file_ in attached_files:
+        sha256 = escape(str(file_.get("file_hash") or ""))
+        content_type = escape(str(file_.get("content_type") or ""))
+
+        file_items.append(f"""
+                <onlyvulns:file>
+                    <onlyvulns:sha256>{sha256}</onlyvulns:sha256>
+                    <onlyvulns:content_type>{content_type}</onlyvulns:content_type>
+                </onlyvulns:file>""")
+
+    return f"""
+            <onlyvulns:files>
+                {''.join(file_items)}
+            </onlyvulns:files>"""
+
+
+def build_rss_feed(reports, is_xml=False):
+    now = datetime.now(timezone.utc)
+    last_build_date = format_datetime(now)
+
+    items = []
+
+    for report in reports:
+        if report.get("current_status") != "released":
+            continue
+        report_id = str(report.get("report_id") or "")
+        title = escape(str(report.get("report_title") or "Untitled Vulnerability Report"))
+        link = escape(f"https://onlyvulns.com/reports?report_id={report_id}")
+        guid = escape(report_id)
+        metadata = report.get("metadata", {})
+        release_date = parse_feed_datetime(
+            report.get("published_at")
+            or report.get("released_at")
+            or metadata.get("wait_end_date")
+        )
+        pub_date = format_datetime(release_date)
+        description = escape(
+            str(
+                report.get("public_summary")
+                or report.get("report_write_up")
+                or "A public vulnerability disclosure report has been released."
+            )
+        )
+        write_up = escape(str(report.get("report_write_up") or ""))
+        release_date_raw = escape(str(metadata.get("wait_end_date") or ""))
+        date_reported_raw = escape(str(metadata.get("date_reported_on") or ""))
+        cvss_score = escape(str(report.get("cvss_score") or ""))
+        severity = escape(str(get_cvss_score_name(report.get("cvss_score"))))
+        vendor = escape(str(report.get("associated_vendor") or ""))
+        files_xml = build_file_xml(report)
+        items.append(f"""
+        <item>
+            <title>{title}</title>
+            <link>{link}</link>
+            <guid isPermaLink="false">{guid}</guid>
+            <pubDate>{pub_date}</pubDate>
+            <description>{description}</description>
+            <category>{severity}</category>
+
+            <onlyvulns:id>{guid}</onlyvulns:id>
+            <onlyvulns:vendor>{vendor}</onlyvulns:vendor>
+            <onlyvulns:raw_cvss_score>{cvss_score}</onlyvulns:raw_cvss_score>
+            <onlyvulns:readable_cvss_score>{severity}</onlyvulns:readable_cvss_score>
+            <onlyvulns:write_up>{write_up}</onlyvulns:write_up>
+            <onlyvulns:release_date>{release_date_raw}</onlyvulns:release_date>
+            <onlyvulns:date_reported>{date_reported_raw}</onlyvulns:date_reported>
+            {files_xml}
+        </item>""")
+        if is_xml:
+            url = "https://onlyvulns.org/api/free/feed.xml"
+        else:
+            url = "https://onlyvulns.com/api/free/feed.rss"
+    rss = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:onlyvulns="{url}">
+    <channel>
+        <title>OnlyVulns Free Vulnerability Feed</title>
+        <link>https://onlyvulns.com</link>
+        <description>Free public vulnerability disclosure reports from OnlyVulns.</description>
+        <language>en-us</language>
+        <lastBuildDate>{last_build_date}</lastBuildDate>
+        <ttl>30</ttl>
+        {''.join(items)}
+    </channel>
+</rss>
+"""
+    return rss
+
+
+def build_xml_feed(reports):
+    return build_rss_feed(reports, is_xml=True)

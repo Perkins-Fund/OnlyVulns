@@ -2,7 +2,7 @@ import time
 import hashlib
 import datetime
 
-from flask import Flask, request, Blueprint
+from flask import Flask, request, Blueprint, redirect, url_for, Response
 from flask_limiter.util import get_remote_address
 from flask_limiter import Limiter
 from werkzeug.utils import secure_filename
@@ -371,10 +371,10 @@ def search_report():
     data = request.get_json(force=True)
     report_id = data.get("report_id", None)
     if report_id is None:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided", is_free_request=True)
     report_data = sql.get_report_by_report_id(report_id)
     if report_data is None:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid report ID provided", is_free_request=True)
     file_status = report_data['report_files']['file_status']
     if file_status == "locked":
         report_files = None
@@ -395,19 +395,35 @@ def search_report():
             "report_files_status": file_status,
         }
     }
-    return settings.build_json_report(retval)
+    return settings.build_json_report(retval, is_free_request=True)
 
 
 @onlyvulns_free.route("/reports", methods=["GET"])
 @limiter.limit("10 per second", key_func=limit_free_requests)
 def list_reports():
-    return settings.build_json_report(sql.get_reports())
+    return settings.build_json_report(sql.get_reports(), is_free_request=True)
 
 
-@onlyvulns_free.route("/feed", methods=["POST"])
-@limiter.limit("10 per second", key_func=limit_free_requests)
-def report_feed():
-    pass
+@onlyvulns_free.route("/feed", methods=["GET"])
+@onlyvulns_free.route("/feed.<feed_format>", methods=["GET"])
+@limiter.limit("1000000 per hour", key_func=limit_free_requests)
+def report_feed(feed_format=None):
+    requested_format = feed_format or request.args.get("format") or "json"
+    print(requested_format)
+    limit = request.args.get("limit", 200, type=int)
+    limit = max(1, min(limit, 200))
+    reports = sql.get_reports(limit=limit)
+    if requested_format == "json":
+        feed = settings.build_json_feed(reports)
+        return settings.build_json_report(feed, is_free_request=True)
+    elif requested_format == "xml":
+        feed = settings.build_xml_feed(reports)
+        return Response(feed, mimetype="application/xml; charset=utf-8")
+    elif requested_format == "rss":
+        feed = settings.build_rss_feed(reports)
+        return Response(feed, mimetype="application/rss+xml; charset=utf-8")
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid feed format", is_free_request=True)
 
 
 @onlyvulns_free.route("/vote", methods=["POST"])
@@ -417,24 +433,24 @@ def vote_on_user():
     rid = data.get("rid", None)
     vote_type = data.get("type", None)
     if rid is None:
-        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied")
+        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied", is_free_request=True)
     if vote_type is None:
-        return settings.build_json_report(None, is_error=True, error_string="No vote type provided")
+        return settings.build_json_report(None, is_error=True, error_string="No vote type provided", is_free_request=True)
     if vote_type not in ["up", "down"]:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid vote type provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid vote type provided", is_free_request=True)
     user_exists = sql.find_researcher_by_id(rid)
     if user_exists is None:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided", is_free_request=True)
     if user_exists['reputation'] < settings.MAX_LEAST_REP:
-        return settings.build_json_report(None, is_error=True, error_string="User reputation cannot be downvoted")
+        return settings.build_json_report(None, is_error=True, error_string="User reputation cannot be downvoted", is_free_request=True)
     associated_user_email = user_exists['email_address']
     if associated_user_email is None:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided", is_free_request=True)
     success = sql.change_researcher_reputation(associated_user_email, downvote=True if vote_type == "down" else False)
     if success:
-        return settings.build_json_report({"ok": True})
+        return settings.build_json_report({"ok": True}, is_free_request=True)
     else:
-        return settings.build_json_report(None, is_error=True, error_string="Unable to change researcher reputation")
+        return settings.build_json_report(None, is_error=True, error_string="Unable to change researcher reputation", is_free_request=True)
 
 
 @onlyvulns_free.route("/researcher", methods=["POST"])
@@ -443,10 +459,10 @@ def get_researcher():
     data = request.get_json(force=True)
     researcher_id = data.get("researcher_id", None)
     if researcher_id is None:
-        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied")
+        return settings.build_json_report(None, is_error=True, error_string="No researcher ID supplied", is_free_request=True)
     user_exists = sql.get_researcher_by_researcher_id(researcher_id)
     if user_exists is None:
-        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided", is_free_request=True)
     user_reports = sql.get_reports_by_researcher_id(researcher_id)
     return settings.build_json_report({
         "researcher_id": researcher_id,
@@ -459,7 +475,7 @@ def get_researcher():
             "is_accepted_by_researcher": user_exists['researcher_tips']['accepted_by_researcher'],
         },
         "researcher_reports": user_reports,
-    })
+    }, is_free_request=True)
 
 
 @onlyvulns_free.route("/researcher/reputation", methods=["GET"])
@@ -474,7 +490,7 @@ def get_researcher_by_reputation():
             "researcher_total_reports": user['total_reports'],
             "researcher_eligible_for_tips": user['researcher_tips']['is_researcher_eligible']
         })
-    return settings.build_json_report(retval)
+    return settings.build_json_report(retval, is_free_request=True)
 
 
 #
