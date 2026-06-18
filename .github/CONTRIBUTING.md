@@ -1,5 +1,3 @@
-# README.md
-
 # OnlyVulns
 
 OnlyVulns is a nonprofit, public-interest project focused on vulnerability transparency, responsible disclosure, and defensive security.

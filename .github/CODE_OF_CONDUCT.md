@@ -1,5 +1,3 @@
-# CODE_OF_CONDUCT.md
-
 # OnlyVulns Code of Conduct
 
 ## Purpose
