@@ -16,7 +16,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 MAX_FILES_PER_REPORT = 5
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-MAX_TOTAL_FILE_SIZE = 10 * 1024 * 1024  # 10MB total size
+MAX_TOTAL_FILE_SIZE = 20 * 1024 * 1024  # 20MB total size
 MAX_LEAST_REP = -10
 FILTER_LIST = os.getenv("FILTER_LIST") or f"{os.getcwd()}{os.path.sep}data{os.path.sep}bad_words.json"
 PII_PATTERNS = [
