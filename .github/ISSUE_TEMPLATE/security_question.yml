@@ -1,0 +1,37 @@
+name: Security question
+description: Ask a non-sensitive security policy or responsible-use question.
+title: "[Security Question]: "
+labels: ["security", "question", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only for general, non-sensitive security questions.
+
+        Do not include vulnerability details, exploit steps, live credentials, secrets, private keys, personal data, or nonpublic third-party security information.
+
+        For sensitive reports, email contact@perkinsfund.org.
+
+  - type: checkboxes
+    id: non-sensitive
+    attributes:
+      label: Public safety confirmation
+      options:
+        - label: This question is safe to discuss publicly.
+          required: true
+        - label: This question does not include vulnerability details, secrets, credentials, or nonpublic security information.
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Ask your question clearly.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Add context that is safe to share publicly.

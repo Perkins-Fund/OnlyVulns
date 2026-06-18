@@ -1,0 +1,62 @@
+name: Feature request
+description: Suggest a new feature, enhancement, or improvement.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for non-security feature requests.
+
+        Do not include live vulnerability details, secrets, credentials, or nonpublic third-party security information.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+      description: What problem would this feature solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the feature or improvement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe alternatives or workarounds, if any.
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Primary audience
+      options:
+        - Researchers
+        - Maintainers
+        - Nonprofits
+        - Public-interest technologists
+        - Affected users or communities
+        - General public
+        - Other
+
+  - type: checkboxes
+    id: responsible-use
+    attributes:
+      label: Responsible use
+      options:
+        - label: This request is intended for defensive, educational, research, or public-interest use.
+          required: true
+        - label: This request does not require publishing secrets, private data, or unsafe exploit details.
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context that is safe to share publicly.

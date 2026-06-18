@@ -1,0 +1,42 @@
+name: Documentation issue
+description: Report missing, unclear, outdated, or incorrect documentation.
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for documentation issues only.
+
+        Do not include security-sensitive information, live credentials, private keys, or nonpublic vulnerability details.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page or file
+      description: Which page, file, or section needs attention?
+      placeholder: README.md, SECURITY.md, docs/example.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is wrong or missing?
+      description: Describe the issue with the documentation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Suggested improvement
+      description: Suggest a correction or improvement.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This issue does not include security-sensitive information.
+          required: true

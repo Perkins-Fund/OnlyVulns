@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security-sensitive report
+    url: mailto:contact@perkinsfund.org
+    about: Do not open a public issue for vulnerabilities, secrets, active exploitation, or nonpublic security information.
+  - name: General contact
+    url: mailto:contact@perkinsfund.org
+    about: Contact the OnlyVulns project team.

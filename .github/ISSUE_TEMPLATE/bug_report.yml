@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a non-security bug in OnlyVulns.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug.
+
+        Do not use this form for security-sensitive issues. If your report includes a vulnerability, live secret, credential, active exploitation detail, or nonpublic security information, email contact@perkinsfund.org instead.
+
+  - type: checkboxes
+    id: security-check
+    attributes:
+      label: Security check
+      options:
+        - label: This report does not contain security-sensitive information.
+          required: true
+        - label: This report does not contain live credentials, tokens, private keys, or personal data.
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the bug clearly.
+      placeholder: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide clear reproduction steps.
+      placeholder: |
+        1. Go to ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Include the version, branch, tag, or commit SHA if known.
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include operating system, browser, runtime, package manager, or other relevant context.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context that is safe to share publicly.
