@@ -220,6 +220,59 @@ def get_reports_by_researcher_id(researcher_id):
         return []
 
 
+def release_report(report_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf["database"]["db_name"]]
+    report_collection = db[conf["database"]["collections"]["users"]["reports"]]
+    try:
+        result = report_collection.update_one({
+            "report_id": report_id
+        }, {
+            "$set": {
+                "report_files.file_status": "unlocked",
+                "current_status": "released"
+            }
+        })
+        return result.modified_count > 0
+    except:
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+@sanitize("report_id")
+def start_report_waiting_period(report_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf["database"]["db_name"]]
+    collection = db[conf["database"]["collections"]["users"]["reports"]]
+    try:
+        result = collection.update_one({"report_id": report_id}, {"$set": {"current_status": "waiting"}})
+        return result.modified_count > 0
+    except:
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def get_reports_that_are_not_released():
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf["database"]["db_name"]]
+    collection = db[conf["database"]["collections"]["users"]["reports"]]
+    try:
+        docs = collection.find({
+            "current_status": {
+                "$ne": "released"
+            }
+        }).sort("metadata.date_reported_on", -1)
+        return list(docs)
+    except:
+        return []
+
+
+
 def get_reports(limit=200):
     client = get_client()
     conf = settings.load_env()

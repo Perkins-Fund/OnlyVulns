@@ -4,16 +4,20 @@ import uuid
 import json
 import time
 import html
+import logging
 import hashlib
 import ipaddress
 
+from html import escape
 from datetime import datetime, timezone
 from email.utils import format_datetime
-from html import escape
+from logging.handlers import RotatingFileHandler
 
 from itsdangerous import URLSafeTimedSerializer
 
 
+HOME = f"{os.path.expanduser('~')}{os.path.sep}.onlyvulns"
+LOG_FILES = f"{HOME}{os.path.sep}logs"
 MAX_FILES_PER_REPORT = 5
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_TOTAL_FILE_SIZE = 20 * 1024 * 1024  # 20MB total size
@@ -61,6 +65,44 @@ PII_PATTERNS = [
 
 def load_env():
     return json.load(open('env.json'))
+
+
+def setup_rotating_logger(name, log_filename, level=logging.INFO, max_bytes=5*1024*1024, backup_count=5, console=True):
+    if not os.path.exists(HOME):
+        os.makedirs(HOME)
+    if not os.path.exists(LOG_FILES):
+        os.makedirs(LOG_FILES)
+    if not name:
+        name = "default-logger"
+    if log_filename is None:
+        log_filename = f"{LOG_FILES}{os.path.sep}onlyvulns.log"
+    else:
+        log_filename = f"{LOG_FILES}{os.path.sep}{log_filename}.log"
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.propagate = False
+    if logger.handlers:
+        return logger
+    formatter = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(name)s | %(filename)s:%(lineno)d | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    file_handler = RotatingFileHandler(
+        filename=log_filename,
+        maxBytes=max_bytes,
+        backupCount=backup_count,
+        encoding="utf-8"
+    )
+    file_handler.setLevel(level)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    if console:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(level)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+    return logger
 
 
 def build_id(**kwargs):
