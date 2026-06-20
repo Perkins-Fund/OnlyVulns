@@ -356,8 +356,8 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] Community votes up or down the vulnerability quality
 * [x] Researcher community-based reputation
 * [x] Comment system
-* [ ] Comment moderation
-* [ ] Abuse reporting
+* [x] Comment moderation
+* [x] Abuse reporting
 * [ ] Research quality indicators
 * [ ] Verified reproduction status
 * [ ] Trusted reviewer feedback
@@ -377,29 +377,29 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] JSON feed
 * [x] Public API feed
 * [ ] Webhook support
-* [ ] Search indexing
+* [x] Search indexing
 * [x] Export disclosed vulnerability data
 * [ ] Public archive pages
 * [x] Machine-readable disclosure metadata
 * [x] Rate limiting for public feeds
 * [x] Abuse-resistant scraping policy
-* [ ] Feed filtering by severity
+* [x] Feed filtering by severity
 * [ ] Feed filtering by affected product
 * [ ] Feed filtering by CWE
-* [ ] Feed filtering by CVSS score
-* [ ] Feed filtering by publication date
+* [x] Feed filtering by CVSS score
+* [x] Feed filtering by publication date
 * [ ] Feed filtering by known exploitation status
 
 ### Moderation, Safety, and Abuse Prevention
 
 * [ ] Administrative moderation tools
-* [ ] Report abuse flow
+* [x] Report abuse flow
 * [ ] Malware upload scanning
 * [ ] Dangerous payload handling rules
 * [x] File type restrictions
 * [ ] Sandboxed PoC storage
 * [ ] Automated secret scanning
-* [ ] Automated doxxing/PII detection
+* [x] Automated doxxing/PII detection
 * [x] Spam prevention
 * [ ] Sybil resistance
 * [ ] Account suspension tools
@@ -422,24 +422,24 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] Authentication tokens
 * [x] Rate limiting
 * [ ] Webhook system
-* [ ] Background job queue
-* [ ] Scheduled embargo release jobs
-* [ ] Scheduled waiting-period publication jobs
+* [x] Background job queue
+* [x] Scheduled embargo release jobs
+* [x] Scheduled waiting-period publication jobs
 * [x] Secure object storage for uploads
 * [ ] Database migrations
 * [ ] Full-text search backend
-* [ ] Logging and monitoring
+* [x] Logging and monitoring
 * [ ] Backup and recovery
 * [ ] Admin dashboard
 * [ ] Open-source deployment documentation
 * [ ] Self-hosting support
 * [ ] Security policy
 * [ ] Contributor guidelines
-* [ ] License selection
+* [x] License selection
 * [ ] Infrastructure-as-code support
 * [ ] CI/CD pipeline
 * [ ] Test suite
-* [ ] Vulnerability reporting process for OnlyVulns itself
+* [x] Vulnerability reporting process for OnlyVulns itself
 
 ## Frontend
 
@@ -471,12 +471,12 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [x] Search by researcher
 * [x] Search by vulnerability title
 * [ ] Search by affected product
-* [ ] Search by vendor name
-* [ ] Search by CVSS score
+* [x] Search by vendor name
+* [x] Search by CVSS score
 * [x] Search by severity
 * [ ] Search by CWE
-* [ ] Search by disclosure status
-* [ ] Search by publication date
+* [x] Search by disclosure status
+* [x] Search by publication date
 * [x] Search by advisory ID
 * [x] Sort by highest votes
 * [x] Sort by lowest votes
