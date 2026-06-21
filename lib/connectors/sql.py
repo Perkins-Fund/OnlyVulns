@@ -473,7 +473,8 @@ def register_user(user_email, magic_link):
                 "last_payout_on": None,
                 "stripe_onboarding_complete": False,
                 "stripe_account_id": None
-            }
+            },
+            "researcher_badges": []
         })
         return True
     except:
