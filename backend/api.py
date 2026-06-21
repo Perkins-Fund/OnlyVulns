@@ -513,7 +513,7 @@ def report_feed(feed_format=None):
 
 
 @onlyvulns_free.route("/vote", methods=["POST"])
-@limiter.limit("25 per hour", key_func=limit_reputation_change)
+@limiter.limit("234234234234 per hour", key_func=limit_reputation_change)
 def vote_on_user():
     data = request.get_json(force=True)
     rid = data.get("rid", None)
@@ -526,6 +526,10 @@ def vote_on_user():
         return settings.build_json_report(None, is_error=True, error_string="Invalid vote type provided", is_free_request=True)
     user_exists = sql.find_researcher_by_id(rid)
     if user_exists is None:
+        sql.add_researcher_vote_event(
+            rid, None, "invalid_researcher",
+            settings.get_string_hash(settings.get_client_ip(request, get_remote_address()))
+        )
         return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided", is_free_request=True)
     if user_exists['reputation'] < settings.MAX_LEAST_REP:
         return settings.build_json_report(None, is_error=True, error_string="User reputation cannot be downvoted", is_free_request=True)
@@ -534,8 +538,18 @@ def vote_on_user():
         return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided", is_free_request=True)
     success = sql.change_researcher_reputation(associated_user_email, downvote=True if vote_type == "down" else False)
     if success:
+        sql.add_researcher_vote_event(
+            rid,
+            1 if vote_type == "up" else -1,
+            "downvote" if vote_type == "down" else "upvote",
+            settings.get_string_hash(settings.get_client_ip(request, get_remote_address()))
+        )
         return settings.build_json_report({"ok": True}, is_free_request=True)
     else:
+        sql.add_researcher_vote_event(
+            rid,0,"unable_to_vote",
+            settings.get_string_hash(settings.get_client_ip(request, get_remote_address()))
+        )
         return settings.build_json_report(None, is_error=True, error_string="Unable to change researcher reputation", is_free_request=True)
 
 

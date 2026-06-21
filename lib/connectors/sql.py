@@ -367,6 +367,27 @@ def increase_researcher_report_count(researcher_id, amount=1, down=False):
         return False
 
 
+@sanitize("researcher_id")
+def add_researcher_vote_event(researcher_id, amount, vote_type, voter_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['admin']['vote_events']]
+    try:
+        collection.insert_one({
+            "researcher_id": researcher_id,
+            "vote_points": amount,
+            "voter_ip_hash": voter_id,
+            "created_at": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+            "event_type": vote_type,
+            "report_id": settings.build_id(is_audit_id=True)
+        })
+    except:
+        import traceback
+        traceback.print_exc()
+        pass
+
+
 @sanitize("email_address")
 def change_researcher_reputation(email_address, amount=1, downvote=False):
     client = get_client()
