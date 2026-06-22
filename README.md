@@ -254,8 +254,8 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [ ] Optional MFA for researchers
 * [x] Researcher profiles
 * [x] Researcher reputation system
-* [ ] Researcher verification badges
-* [ ] Researcher pseudonym support
+* [x] Researcher verification badges
+* [x] Researcher pseudonym support
 * [ ] Role-based permissions for researchers, moderators, and admins
 * [ ] Account recovery
 * [ ] Account deletion
