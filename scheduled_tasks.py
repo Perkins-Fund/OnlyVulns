@@ -32,6 +32,7 @@ def process_unverified_users():
 
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="UTC")
+    run_now = datetime.datetime.now(datetime.timezone.utc)
     logger.info(f"Starting all scheduled tasks at: {datetime.datetime.now(tz=datetime.timezone.utc).isoformat()}")
     scheduler.add_job(
         process_report_release,
@@ -43,6 +44,7 @@ def start_scheduler():
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
+        next_run_time=run_now
     )
     scheduler.add_job(
         process_badge_additions,
@@ -54,6 +56,7 @@ def start_scheduler():
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
+        next_run_time=run_now
     )
     scheduler.add_job(
         process_unverified_users,
@@ -65,6 +68,7 @@ def start_scheduler():
         max_instances=1,
         coalesce=True,
         misfire_grace_time=3600,
+        next_run_time=run_now
     )
     scheduler.start()
     return scheduler

@@ -169,12 +169,15 @@ def get_earned_badges(researcher):
             continue
         if not has_badge_requirements(researcher, badge_config):
             continue
-        logger.info(f"Adding badge: {badge_name} to account: {researcher['user_id']}")
-        earned_badges.append({
-            "name": badge_name,
-            "description": badge_config["description"],
-            "earned_on": datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-        })
+        if researcher["is_verified"]:
+            logger.info(f"Adding badge: {badge_name} to account: {researcher['user_id']}")
+            earned_badges.append({
+                "name": badge_name,
+                "description": badge_config["description"],
+                "earned_on": datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+            })
+        else:
+            logger.warning(f"Researcher: {researcher['user_id']} has not been verified and will not receive their badge")
         existing_badge_names.add(badge_name)
     return earned_badges
 
