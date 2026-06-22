@@ -1,5 +1,8 @@
 import os
+import random
 import re
+import secrets
+import string
 import uuid
 import json
 import time
@@ -105,6 +108,15 @@ def setup_rotating_logger(name, log_filename, level=logging.INFO, max_bytes=5*10
     return logger
 
 
+def generate_anonymous_username(length=64):
+    alpha = string.ascii_letters
+    chars = []
+    for _ in range(length):
+        chars.append(random.SystemRandom().choice(alpha))
+    hash_ = get_string_hash("".join(chars))
+    return hash_[0:9]
+
+
 def build_id(**kwargs):
     is_error = kwargs.get('is_error', False)
     is_user_id = kwargs.get('is_user_id', False)
@@ -133,7 +145,8 @@ def build_id(**kwargs):
     if not is_display_id:
         return f"{template}{uuid.uuid4().hex}"
     else:
-        return f"{template}{uuid.uuid4().hex[0-9]}"
+        sid = generate_anonymous_username()
+        return f"{template}{sid}"
 
 
 def build_json_report(output, **kwargs):

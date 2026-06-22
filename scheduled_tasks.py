@@ -7,7 +7,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from lib.jobs import (
     release_reports,
-    add_badges
+    add_badges,
+    remove_unverified_users,
 )
 
 
@@ -44,6 +45,17 @@ def start_scheduler():
         hour=0,
         minute=0,
         id="badge-addition-process",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        remove_unverified_users,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        id="unverified-users-process",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

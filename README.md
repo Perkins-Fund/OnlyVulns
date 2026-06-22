@@ -261,7 +261,6 @@ The goal is not to give vendors control over the platform. The goal is to create
 * [ ] Account deletion
 * [ ] Researcher notification preferences
 * [ ] Researcher payout settings
-* [ ] Researcher public/private profile controls
 
 ### Disclosure Management
 

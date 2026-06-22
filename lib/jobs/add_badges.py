@@ -1,8 +1,10 @@
 import datetime
 
 import lib.connectors.sql as sql
+import lib.settings as settings
 
 
+logger = settings.setup_rotating_logger("badge-addition-logger", "badge_additions.log")
 BADGE_TABLE = {
     "Under Review": {
         "required_rep": -5,
@@ -167,6 +169,7 @@ def get_earned_badges(researcher):
             continue
         if not has_badge_requirements(researcher, badge_config):
             continue
+        logger.info(f"Adding badge: {badge_name} to account: {researcher['user_id']}")
         earned_badges.append({
             "name": badge_name,
             "description": badge_config["description"],
@@ -177,7 +180,11 @@ def get_earned_badges(researcher):
 
 
 def run_job():
+    start = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+    logger.info(f"Starting badge additions at: {start}")
     researchers = sql.get_all_researchers()
     for researcher in researchers:
         badges = get_earned_badges(researcher)
         sql.update_user_badges(researcher['user_id'], badges)
+    end = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+    logger.info(f"Finished badge additions at: {end}")

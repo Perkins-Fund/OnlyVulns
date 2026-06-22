@@ -512,6 +512,19 @@ def update_display_name(display_name, researcher_id):
         return False
 
 
+@sanitize("researcher_id")
+def delete_user_account(researcher_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        collection.delete_one({"user_id": researcher_id})
+        return True
+    except:
+        return False
+
+
 @sanitize("user_email")
 def register_user(user_email, magic_link):
     client = get_client()
