@@ -25,6 +25,11 @@ def process_badge_additions():
     add_badges.run_job()
 
 
+def process_unverified_users():
+    logger.info("Processing unverified user removals")
+    remove_unverified_users.run_job()
+
+
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="UTC")
     logger.info(f"Starting all scheduled tasks at: {datetime.datetime.now(tz=datetime.timezone.utc).isoformat()}")
@@ -51,7 +56,7 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
     scheduler.add_job(
-        remove_unverified_users,
+        process_unverified_users,
         trigger="cron",
         hour=0,
         minute=0,
