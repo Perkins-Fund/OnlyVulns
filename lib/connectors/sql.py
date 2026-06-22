@@ -404,6 +404,34 @@ def change_researcher_reputation(email_address, amount=1, downvote=False):
         return False
 
 
+def get_all_researchers():
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        data = collection.find({})
+        return [item for item in data]
+    except:
+        return []
+
+
+@sanitize("researcher_id")
+def update_user_badges(researcher_id, badges):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        results = collection.update_one(
+            {"user_id": researcher_id},
+            {"$set": {"badges": badges}},
+        )
+        return results.modified_count == 1
+    except:
+        return False
+
+
 @sanitize("researcher_id")
 def find_researcher_by_id(researcher_id):
     client = get_client()
@@ -468,6 +496,22 @@ def find_user_by_email(email_address):
     return results
 
 
+@sanitize("display_name", "researcher_id")
+def update_display_name(display_name, researcher_id):
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf['database']['db_name']]
+    collection = db[conf['database']['collections']['users']['accounts']]
+    try:
+        results = collection.update_one(
+            {"user_id": researcher_id},
+            {"$set": {"display_name": display_name}},
+        )
+        return results.modified_count == 1
+    except:
+        return False
+
+
 @sanitize("user_email")
 def register_user(user_email, magic_link):
     client = get_client()
@@ -495,7 +539,8 @@ def register_user(user_email, magic_link):
                 "stripe_onboarding_complete": False,
                 "stripe_account_id": None
             },
-            "researcher_badges": []
+            "badges": [],
+            "display_name": settings.build_id(is_display_id=True)
         })
         return True
     except:

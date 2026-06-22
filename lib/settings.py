@@ -112,6 +112,7 @@ def build_id(**kwargs):
     is_file_id = kwargs.get('is_file_id', False)
     is_audit_id = kwargs.get('is_audit_id', False)
     is_comment_id = kwargs.get('is_comment_id', False)
+    is_display_id = kwargs.get("is_display_id", False)
 
     if is_error:
         template = "err_"
@@ -125,9 +126,14 @@ def build_id(**kwargs):
         template = "adt_"
     elif is_comment_id:
         template = "cmt_"
+    elif is_display_id:
+        template = "OV-"
     else:
         template = "req_"
-    return f"{template}{uuid.uuid4().hex}"
+    if not is_display_id:
+        return f"{template}{uuid.uuid4().hex}"
+    else:
+        return f"{template}{uuid.uuid4().hex[0-9]}"
 
 
 def build_json_report(output, **kwargs):

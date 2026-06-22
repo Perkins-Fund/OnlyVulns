@@ -6,7 +6,8 @@ import lib.settings as settings
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from lib.jobs import (
-    release_reports
+    release_reports,
+    add_badges
 )
 
 
@@ -18,6 +19,11 @@ def process_report_release():
     release_reports.run_job()
 
 
+def process_badge_additions():
+    logger.info("Processing badge additions")
+    add_badges.run_job()
+
+
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="UTC")
     logger.info(f"Starting all scheduled tasks at: {datetime.datetime.now(tz=datetime.timezone.utc).isoformat()}")
@@ -27,6 +33,17 @@ def start_scheduler():
         hour=0,
         minute=0,
         id="release-reports-process",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        process_badge_additions,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        id="badge-addition-process",
         replace_existing=True,
         max_instances=1,
         coalesce=True,

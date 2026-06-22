@@ -170,6 +170,7 @@ def whoami_researcher():
                 "registration_date": user_exists['registered_at'],
                 "researcher_reputation": user_exists['reputation'],
                 "researcher_total_reports": user_exists['total_reports'],
+                "researcher_display_name": user_exists['display_name'],
                 "researcher_tips": {
                     "onboarded": user_exists['researcher_tips']['stripe_onboarding_complete'],
                     "is_eligible": user_exists['researcher_tips']['is_researcher_eligible'],
@@ -179,6 +180,40 @@ def whoami_researcher():
             })
         else:
             return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+
+
+@onlyvulns_v1.route("/researcher/name/update", methods=["POST"])
+@limiter.limit("1 per day")
+def update_researcher_display_name():
+    data = request.get_json(force=True)
+    token  = data.get("token", None)
+    researcher_id = data.get("rid", None)
+    wanted_display_name = data.get("display_name", None)
+    if token is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+    if researcher_id is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    good_token = settings.verify_token(token)
+    if good_token is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid token provided")
+    if wanted_display_name is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid display name provided")
+    if len(wanted_display_name) > 25:
+        return settings.build_json_report(None, is_error=True, error_string="Display name cannot be more than 12 characters")
+    if len(wanted_display_name) < 6:
+        return settings.build_json_report(None, is_error=True, error_string="Display name must be at least 6 characters")
+    user_exists = sql.find_user_by_email(good_token)
+    if user_exists is None:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID provided")
+    real_researcher_id = user_exists['user_id']
+    if real_researcher_id != researcher_id:
+        return settings.build_json_report(None, is_error=True, error_string="Invalid researcher ID")
+    redacted_display_name = settings.filter_language(wanted_display_name)
+    updated = sql.update_display_name(redacted_display_name, researcher_id)
+    if updated:
+        return settings.build_json_report({"ok": True})
+    else:
+        return settings.build_json_report(None, is_error=True, error_string="Unable to update display name")
 
 
 @onlyvulns_v1.route("/researcher/magiclink", methods=["GET"])
@@ -575,6 +610,8 @@ def get_researcher():
             "is_accepted_by_researcher": user_exists['researcher_tips']['accepted_by_researcher'],
         },
         "researcher_reports": user_reports,
+        "researcher_badges": user_exists['badges'],
+        "researcher_display_name": user_exists['display_name'],
     }, is_free_request=True)
 
 
