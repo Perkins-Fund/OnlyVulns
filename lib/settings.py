@@ -1,7 +1,6 @@
 import os
 import random
 import re
-import secrets
 import string
 import uuid
 import json
@@ -18,7 +17,9 @@ from logging.handlers import RotatingFileHandler
 
 from itsdangerous import URLSafeTimedSerializer
 
-
+# major.minor.patch.push
+VERSION = "0.0.0.1"
+VERSION_CODE_NAME = "DeadDrop"
 HOME = f"{os.path.expanduser('~')}{os.path.sep}.onlyvulns"
 LOG_FILES = f"{HOME}{os.path.sep}logs"
 MAX_FILES_PER_REPORT = 5
@@ -528,8 +529,11 @@ def filter_language(s):
         filters = []
     words = s.split(" ")
     retval = []
+    at_commands = ("@researcher", "@comment", "@report")
     for word in words:
-        if any(filter_ in word for filter_ in filters):
+        if any(word == command for command in at_commands):
+            retval.append(word)
+        elif any(filter_ in word for filter_ in filters):
             retval.append(mask(word))
         else:
             word = escape(word)

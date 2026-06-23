@@ -272,6 +272,19 @@ def get_reports_that_are_not_released():
         return []
 
 
+def get_report_count():
+    client = get_client()
+    conf = settings.load_env()
+    db = client[conf["database"]["db_name"]]
+    collection = db[conf["database"]["collections"]["users"]["reports"]]
+    try:
+        all_reports = collection.count_documents({})
+        released_reports = collection.count_documents({"current_status": "released"})
+        return all_reports, released_reports
+    except:
+        return 0, 0
+
+
 
 def get_reports(limit=200):
     client = get_client()

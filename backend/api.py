@@ -115,11 +115,20 @@ def handler_exception(error):
     return settings.build_json_report(None, is_error=True, error_string="Internal server error"), 500
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def public_home():
+    report_counts = sql.get_report_count()
     return settings.build_json_report({
-        "version": "0.1",
-        "title": "OnlyVulns API"
+        "version": settings.VERSION,
+        "version_code_name": settings.VERSION_CODE_NAME,
+        "title": "OnlyVulns API",
+        "documentation_link": "https://docs.perkinsfund.org/readme/onlyvulns-endpoints",
+        "description": "Researcher-controlled vulnerability disclosure, audited by the community.",
+        "status": "online",
+        "disclosure_information": {
+            "total_disclosures": report_counts[0],
+            "released_disclosures": report_counts[1]
+        }
     })
 
 
