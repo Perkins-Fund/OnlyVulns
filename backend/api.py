@@ -128,7 +128,7 @@ def public_home():
 #
 
 @onlyvulns_v1.route("/researcher/register", methods=["POST"])
-@limiter.limit("1234234 per day", key_func=limit_free_requests)
+@limiter.limit("1 per day", key_func=limit_free_requests)
 def register_researcher():
     data = request.get_json(force=True)
     email = data.get("email", None)
