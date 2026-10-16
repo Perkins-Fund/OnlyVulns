@@ -1,0 +1,2 @@
+# Only third-party dependency imported by lib.settings; matches requirements.txt.
+itsdangerous==2.2.0
